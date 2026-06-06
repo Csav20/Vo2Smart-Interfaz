@@ -5120,7 +5120,7 @@ function processData(d){
 
   // ── SSOT: Usar computeRER() como fuente única de verdad ──
   // IMPORTANTE: Pasar firmware RQ al computeRER() para respetar Haldane correction (2026-04-25)
-  const rqFirmware=safeN(sd.rer,null);  // RQ del firmware (normalizado de 'rq' a 'rer')
+  const rqFirmware=safeN(sd.rq||sd.rer,null);  // RQ del firmware — prioridad sd.rq (firmware anterior) sobre sd.rer
 
   // ── VALIDACIÓN CRÍTICA: SIEMPRE usar RQ del firmware cuando esté disponible ──
   // R-RER-FIRMWARE-MANDATORY-01 (2026-04-25): El dashboard DEBE mostrar el RQ del firmware
@@ -5139,14 +5139,6 @@ function processData(d){
         debug: { correctionApplied: false, method: 'firmware_mandatory' }
       }
     : computeRER(vo2, vco2, o2, co2, ve, rqFirmware);  // Fallback a lógica normal
-
-  // DEBUG: Verificar qué está pasando con el RER
-  console.log('🔍 DEBUG RER:', {
-    rqFirmware: rqFirmware,
-    rerData_method: rerData.debug.method,
-    rer_display: rerData.rer_display,
-    isUsingFirmware: rqFirmware != null && isFinite(rqFirmware) && rqFirmware >= 0.60 && rqFirmware <= 1.50
-  });
 
   let rer_raw=rerData.rer_raw;
   const rer=rerData.rer;
@@ -5246,7 +5238,6 @@ function processData(d){
   setText('d-ee',cal?cal.eeH.toFixed(2):'--');
   setText('d-ve',ve_c.toFixed(1));
   setText('d-rer',rerDisplay.toFixed(3));
-  console.log('🎯 DOM Update RER:', rerDisplay.toFixed(3), 'element exists:', !!document.getElementById('d-rer'));
   setText('d-rer-sub','Conf: '+rerConf+'%'+(rerFlag?' ⚠':''));
   // Color the RER display based on flag + confidence + physiological range
   const rerEl=document.getElementById('d-rer');
@@ -7405,7 +7396,7 @@ async function updateReport(){
     {label:'GASTO E.',   score:sEE,   raw:eePeak>0?eePeak.toFixed(2)+' kcal/min':'--'},
     {label:'% PRED.',    score:toScore(pctPred,40,140), raw:pctPred>0?pctPred.toFixed(0)+'%':'--'},
     {label:'PULSO O₂',  score:toScore(hr>0&&vo2>0?vo2*(getPatient().weight||70)/hr:0,0,25), raw:hr>0&&vo2>0?(vo2*(getPatient().weight||70)/hr).toFixed(1)+' ml/lat':'--'},
-    {label:'EFIC. VENT.',score:toScore(ve>0&&vo2>0?(ve/(vo2*(getPatient().weight||70)/1000)):0,20,40), raw:ve>0&&vo2>0?(ve/(vo2*(getPatient().weight||70)/1000)).toFixed(1)+' VE/VO₂':'--'},
+    {label:'EFIC. VENT.',score:toScore(_arrMax(_fh.veVO2||[]),20,40), raw:_arrMax(_fh.veVO2||[])>0?_arrMax(_fh.veVO2||[]).toFixed(1)+' VE/VO₂':'--'},
   ]);
 
   renderSpecialties(getSpecialties({vo2Peak:vo2,rer,hr,ve,eePeak,pctPred}));
@@ -8201,8 +8192,14 @@ function printBariatric(){
   const owen    = isFem?(795+7.18*weight):(879+10.2*weight);
   const hb      = isFem?(447.6+9.2*weight+3.1*height-4.3*age):(88.4+13.4*weight+4.8*height-5.7*age);
   const cal     = G.currentData?.cal;
-  const rmr     = cal ? cal.rmr : 0;
   const rer     = safeN(G.currentData?.rer,0);
+  const vo2Bari = safeN(G.currentData?.vo2,0);
+  let rmr = 0;
+  if(cal){ rmr = cal.rmr; }
+  else if(vo2Bari > 0 && rer > 0 && weight > 0){
+    const _fb = calcHybrid(vo2Bari*weight, vo2Bari*rer*weight, rer);
+    if(_fb) rmr = _fb.rmr;
+  }
   const phaseName = _bariPhase>=0?BARI_PHASES[_bariPhase].label:'No seleccionada';
   const irb     = document.getElementById('bari-score-badge')?.textContent||'--';
   const irbLabel = document.getElementById('bari-irb-label')?.textContent||'--';
