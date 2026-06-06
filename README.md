@@ -13,7 +13,7 @@
 [![Patent](https://img.shields.io/badge/Patente-CL%202024024875-22c55e?style=for-the-badge)](#)
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-black?style=for-the-badge&logo=github)](#)
 
-[🌐 **Ver Demo en Vivo**](https://csav20.github.io/Vo2Smart-Interfaz/) · [📱 **Abrir App**](https://csav20.github.io/Vo2Smart-Interfaz/app.html) · [📄 **Documentación**](#arquitectura)
+[🌐 **Ver Demo en Vivo**](https://csav20.github.io/Vo2Smart-Interfaz/) · [📱 **Abrir App**](https://csav20.github.io/Vo2Smart-Interfaz/app.html) · [📱 **Abrir App Modelo 2**](https://csav20.github.io/Vo2Smart-Interfaz/vo2app.html) · [🌐 **Demo Modelo 2**](https://csav20.github.io/Vo2Smart-Interfaz/vo2revision.html) · [📄 **Documentación**](#arquitectura)
 
 ---
 
@@ -211,8 +211,19 @@ flowchart TD
 
 ### Opción 1 — Demo instantánea (sin instalar nada)
 
+**App original:**
 ```
 https://csav20.github.io/Vo2Smart-Interfaz/app.html
+```
+
+**App Modelo 2 (v4.0.4 Near-Clinical — BLE + Offline Sync):**
+```
+https://csav20.github.io/Vo2Smart-Interfaz/vo2app.html
+```
+
+**Dashboard Modelo 2 (vo2revision):**
+```
+https://csav20.github.io/Vo2Smart-Interfaz/vo2revision.html
 ```
 
 ### Opción 2 — Clonar y ejecutar localmente
