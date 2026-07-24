@@ -1363,6 +1363,12 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .nav-item{width:auto;flex-shrink:0;white-space:nowrap;margin-bottom:0;padding:8px 12px;}
   .nav-item .drag-handle,.nav-item .nav-badge{display:none !important;}
   .nav-item.active{border-left:none;border-bottom:2px solid var(--primary);}
+  /* compactar nav móvil a proporción tipo botón + quitar footer que estorba tarjetas */
+  .sidebar{max-height:none;}
+  .sidebar-nav{padding:5px 6px;gap:3px;}
+  .nav-item{padding:6px 10px;font-size:0.72rem;gap:5px;border-radius:8px;}
+  .nav-item .icon{font-size:0.95rem;}
+  .sidebar > div:last-child{display:none;}   /* Demo/reset/patente fuera del bar horizontal */
 }
 @supports(padding:max(0px)){
   .topbar{padding-top:max(0px,env(safe-area-inset-top));}
