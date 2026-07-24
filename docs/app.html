@@ -10325,5 +10325,22 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260408-1');
 </div>
 
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+<script>
+/* ── Puente Bluefy: iOS + sin Web Bluetooth (Safari/WebKit) → ofrecer relanzar en Bluefy (Web BLE browser) ── */
+(function(){
+  var iOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(navigator.bluetooth||!iOS)return;                 /* ya en Bluefy o no-iOS → nada */
+  if(sessionStorage.getItem('bluefyDismiss'))return;
+  var b=document.createElement('div');
+  b.id='bluefy-bridge';
+  b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#0b1220;color:#fff;padding:12px 14px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;font-family:-apple-system,system-ui,sans-serif;font-size:0.82rem;font-weight:600;box-shadow:0 -4px 20px rgba(0,0,0,.45);';
+  b.innerHTML='<span style="flex:1;min-width:0;">⚠ Web Bluetooth no disponible aquí. Abre en <b>Bluefy</b> para conectar el VO₂Smart.</span>'
+    +'<button id="bfy-go" style="flex-shrink:0;background:#70d4e9;color:#04222b;border:none;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer;">Abrir en Bluefy</button>'
+    +'<button id="bfy-x" aria-label="cerrar" style="flex-shrink:0;background:transparent;color:#8aa4b0;border:none;font-size:1.15rem;padding:4px 6px;cursor:pointer;">×</button>';
+  document.body.appendChild(b);
+  document.getElementById('bfy-go').onclick=function(){location.href='bluefy://open?url='+encodeURIComponent(location.href);};
+  document.getElementById('bfy-x').onclick=function(){sessionStorage.setItem('bluefyDismiss','1');b.remove();};
+})();
+</script>
 </body>
 </html>
