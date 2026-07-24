@@ -5277,9 +5277,9 @@ function processData(d){
 
   // ── Comparativa MSS: actualizar tiles + tiempo etapa (portado desde vo2lab) ──
   try {
-    const weight=(typeof _p!=='undefined'&&_p&&safeN(_p.weight)>0)?safeN(_p.weight):(safeN(getPatient&&getPatient().weight)||0);
-    const vo2absL=weight>0?(vo2*weight/1000):0;
-    const vco2absL=weight>0?(vco2*weight/1000):0;
+    // vo2ml/vco2ml (ml/min) ya calculados en scope con peso real o fallback 70 → L/min = /1000
+    const vo2absL=vo2ml>0?(vo2ml/1000):0;
+    const vco2absL=vco2ml>0?(vco2ml/1000):0;
     setText('mss-hr',hr>0?hr.toFixed(0):'--');
     setText('mss-vo2abs',vo2absL>0?vo2absL.toFixed(2):'--');
     setText('mss-vo2kg',vo2>0?vo2.toFixed(1):'--');
