@@ -1,0 +1,16 @@
+{
+  "name": "VO2Smart PRO",
+  "short_name": "VO2Smart",
+  "description": "Análisis cardiopulmonar VO2/VCO2 — ActionSmart",
+  "start_url": "/Vo2Smart-Interfaz/app.html",
+  "scope": "/Vo2Smart-Interfaz/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1022",
+  "theme_color": "#0d6efd",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
