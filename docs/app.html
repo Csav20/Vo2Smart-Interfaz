@@ -3327,7 +3327,10 @@ function startTest(){
     return;
   }
   // Show protocol modal or go direct
-  if(_protocolSkipSession){
+  // FIX móvil/iOS: el modal protocol-overlay no es responsive (botón "Continuar" inaccesible)
+  // → en pantallas ≤768px se salta y arranca directo. En desktop mantiene el aviso.
+  var _isMobileStart = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+  if(_protocolSkipSession || _isMobileStart){
     _doStartTest();
   } else {
     var ov=document.getElementById('protocol-overlay');
