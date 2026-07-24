@@ -1269,6 +1269,24 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .topbar-inner{height:auto;padding:8px 0;}
 }
 
+/* ── RESPONSIVE MÓVIL — fix overflow flexbox (min-width:0) + splash/topbar/controles ── */
+.main{min-width:0;}
+.content{min-width:0;}
+@media(max-width:768px){
+  #splash{padding:24px 16px;gap:20px;}
+  .splash-brand{font-size:1.8rem !important;}
+  .login-card{max-width:100%;}
+  .brand{flex-wrap:wrap;min-width:0;}
+  .brand-badge{white-space:normal;max-width:100%;}
+  .topbar-right{flex-wrap:wrap;min-width:0;}
+  .toggle-group{flex-wrap:wrap;}
+  .test-control-bar > div{flex-wrap:wrap;}
+  .protocol-selector{flex-direction:column;align-items:stretch;width:100%;min-width:0;}
+  .protocol-select{width:100%;max-width:100%;}
+  .test-timer{font-size:1.3rem;}
+  canvas{max-width:100%;}
+}
+
 /* ════════════════════════════════════════════════
    VISUAL IMPROVEMENTS v5.2
    ════════════════════════════════════════════════ */
