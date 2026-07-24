@@ -1303,6 +1303,30 @@ textarea.form-input{resize:vertical;min-height:100px;}
 @media(max-width:480px){
   .borg-grid{grid-template-columns:repeat(3,1fr);}
 }
+/* ══ MÓVIL NATIVO — compactar dashboard: cards auto-height, 2×2 hero, tipografía densa (evita cards gigantes 210px) ══ */
+@media(max-width:600px){
+  .content{padding:10px 12px;}
+  /* HERO: 2 columnas, cards que se ajustan al contenido (no 210px fijos) */
+  .metrics-hero{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .metric-card{min-height:0!important;height:auto!important;max-height:none!important;padding:11px 12px;}
+  .m-label{font-size:0.6rem;letter-spacing:0.4px;margin-bottom:2px;height:auto;line-height:1.25;}
+  .m-value{font-size:1.75rem;height:auto;margin:2px 0;}
+  .m-unit{font-size:0.66rem;height:auto;line-height:1.2;}
+  .m-sub{display:none;}                       /* datos secundarios ocultos en móvil → libera altura */
+  .m-trend{top:8px;right:9px;font-size:0.62rem;}
+  .mini-chart-wrap{height:36px;margin-top:4px;}
+  .mini-chart-wrap canvas{height:36px!important;}
+  /* MINIS: 3 por fila, compactas */
+  .metrics-grid{grid-template-columns:repeat(3,1fr)!important;gap:6px;margin-bottom:12px;}
+  .metric-mini{min-height:0!important;height:auto!important;max-height:none!important;padding:8px 9px;}
+  .mm-label{font-size:0.55rem;height:auto;line-height:1.2;}
+  .mm-value{font-size:1.05rem;height:auto;line-height:1.15;margin:2px 0;}
+  .mm-unit{font-size:0.58rem;}
+}
+@media(max-width:380px){
+  .m-value{font-size:1.55rem;}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)!important;}
+}
 
 /* ── RESPONSIVE MÓVIL — fix overflow flexbox (min-width:0) + splash/topbar/controles ── */
 .main{min-width:0;}
