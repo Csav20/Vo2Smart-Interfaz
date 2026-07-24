@@ -78,6 +78,18 @@ body{font-family:var(--body);background:var(--bg);color:var(--text-page);min-hei
   color:var(--accent);padding:2px 8px;border-radius:20px;
 }
 .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;}
+/* ── BATTERY PILL (topbar) — portado de vo2lab ── */
+.batt-pill{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(20,30,50,0.05);border:1px solid var(--border2);
+  border-radius:20px;padding:4px 9px;font-size:0.73rem;font-weight:600;color:var(--muted);
+  transition:color .4s ease,border-color .4s ease;
+  white-space:nowrap;flex-shrink:0;
+}
+.batt-pill-pct{font-family:var(--mono);letter-spacing:-.3px;}
+.batt-pill-v{font-size:0.62rem;opacity:0.6;font-family:var(--mono);}
+@media(max-width:1200px){.batt-pill-v{display:none;}}
+@media(max-width:1060px){.batt-pill{display:none;}}
 .status-pill{
   display:flex;align-items:center;gap:7px;
   background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
@@ -5237,6 +5249,7 @@ function processData(d){
   setText('d-petco2',petco2>0?petco2.toFixed(1):'--');
   setText('d-temp',temp.toFixed(1));
   setText('d-bat',bat.toFixed(0));
+  updateTopbarBattery(bat,batV);
   setText('d-cal-total',G.totalCalories.toFixed(1));
   setText('d-elapsed',elapsed);
   setText('d-vo2-peak',G.vo2Peak.toFixed(1));
@@ -8366,6 +8379,15 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260408-1');
           <button class="toggle-btn" onclick="setLang('EN',this)">EN</button>
           <button class="toggle-btn" onclick="setLang('PT',this)">PT</button>
         </div>
+        <div class="batt-pill" id="topbar-batt-pill" title="Batería dispositivo">
+          <svg id="topbar-batt-svg" width="22" height="12" viewBox="0 0 22 12" fill="none" style="color:inherit;flex-shrink:0;">
+            <rect x="0.75" y="0.75" width="18" height="10.5" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="19" y="4" width="2.5" height="4" rx="1" fill="currentColor"/>
+            <rect id="topbar-batt-fill" x="2.5" y="2.5" width="0" height="7" rx="1" fill="currentColor"/>
+          </svg>
+          <span class="batt-pill-pct" id="topbar-batt-pct">--</span>
+          <span class="batt-pill-v" id="topbar-batt-v">--V</span>
+        </div>
         <span style="font-size:0.75rem;color:rgba(255,255,255,0.75);font-family:var(--mono);" id="topTime">--:--:--</span>
       </div>
     </div>
@@ -10324,6 +10346,26 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260408-1');
   </div>
 </div>
 
+<script>
+/* ── Battery pill topbar — portado de vo2lab. Guard boot-phase (batV<3.0 no invalida %) ── */
+function updateTopbarBattery(pct, volts){
+  var fill=document.getElementById('topbar-batt-fill');
+  var pctEl=document.getElementById('topbar-batt-pct');
+  var vEl=document.getElementById('topbar-batt-v');
+  var pill=document.getElementById('topbar-batt-pill');
+  if(!fill)return;
+  var _vOk=volts>=3.0;
+  if(pct<=0 && !_vOk){ if(pctEl)pctEl.textContent='--'; if(vEl)vEl.textContent='--V'; return; }
+  var charging=_vOk && volts>=4.18;                 /* IP5306 constrain max 4.20V → ≥4.18 = cargando */
+  var color=charging?'#60e8a0':pct>50?'#22c55e':pct>20?'#ffbe0b':'#ff4d6d';
+  fill.setAttribute('width',Math.max(0,Math.min(13,(pct/100)*13)).toFixed(1));
+  fill.setAttribute('fill',color);
+  pctEl.textContent=charging?'⚡ cargando':pct.toFixed(0)+'%';
+  vEl.textContent=_vOk?volts.toFixed(1)+'V':'--V';
+  pill.style.color=color;
+  pill.style.borderColor=color;
+}
+</script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
 <script>
 /* ── Puente Bluefy: iOS + sin Web Bluetooth (Safari/WebKit) → ofrecer relanzar en Bluefy (Web BLE browser) ── */
