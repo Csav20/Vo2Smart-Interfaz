@@ -1364,11 +1364,14 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .nav-item .drag-handle,.nav-item .nav-badge{display:none !important;}
   .nav-item.active{border-left:none;border-bottom:2px solid var(--primary);}
   /* compactar nav móvil a proporción tipo botón + quitar footer que estorba tarjetas */
-  .sidebar{max-height:none;}
-  .sidebar-nav{padding:5px 6px;gap:3px;}
-  .nav-item{padding:6px 10px;font-size:0.72rem;gap:5px;border-radius:8px;}
+  /* FIX iOS: sidebar fd:row heredaba align-items:stretch → nav-items estiraban a 159px (altura del footer).
+     align-items:center colapsa cada item a su altura de contenido = igual que botones btn-sm del topbar. */
+  .sidebar{max-height:none;align-items:center;}
+  .sidebar-nav{padding:5px 6px;gap:3px;align-items:center;}
+  .nav-item{padding:6px 11px;font-size:0.78rem;gap:6px;border-radius:8px;align-self:center;height:auto;flex:0 0 auto;line-height:1.1;}
   .nav-item .icon{font-size:0.95rem;}
-  .sidebar > div:last-child{display:none;}   /* Demo/reset/patente fuera del bar horizontal */
+  /* Footer Demo/reset/patente tiene inline style="display:flex" → requiere !important para ocultarlo en la barra horizontal */
+  .sidebar > div:last-child{display:none !important;}
 }
 @supports(padding:max(0px)){
   .topbar{padding-top:max(0px,env(safe-area-inset-top));}
