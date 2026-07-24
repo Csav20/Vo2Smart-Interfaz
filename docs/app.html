@@ -1795,6 +1795,32 @@ textarea.form-input{resize:vertical;min-height:100px;}
   tr{page-break-inside:avoid;}
   .rep-markers-table tr{page-break-inside:avoid;}
 }
+/* ── COMPARATIVA MSS (layout tipo MetaSoft Studio) — portado desde vo2lab ── */
+.mss-hint{font-size:0.74rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.mss-top{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px;}
+.mss-trend-card,.mss-workload{background:var(--card2);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);padding:12px 14px;}
+.mss-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.mss-card-title{font-size:0.78rem;font-weight:700;color:var(--accent);letter-spacing:0.3px;}
+.mss-step-time{font-size:0.72rem;color:var(--muted);font-family:var(--mono);}
+.mss-step-time b{color:var(--fg);}
+.mss-trend-body{height:280px;position:relative;}
+.mss-workload{display:flex;flex-direction:column;}
+.mss-wl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;flex:1;align-items:center;}
+.mss-wl-cell{text-align:center;background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 8px;}
+.mss-wl-value{font-family:var(--mono);font-size:2.4rem;font-weight:600;color:var(--fg);line-height:1;}
+.mss-wl-unit{font-size:0.7rem;color:var(--muted);margin-top:4px;}
+.mss-wl-stage{font-size:0.74rem;color:var(--muted2);text-align:center;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);}
+.mss-wl-foot{font-size:0.7rem;color:var(--muted);font-family:var(--mono);text-align:center;}
+.mss-wl-foot b{color:var(--fg);}
+.mss-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.mss-tile{background:linear-gradient(160deg,color-mix(in srgb,var(--mss-c) 26%,var(--card2)),var(--card2));
+  border:1px solid color-mix(in srgb,var(--mss-c) 45%,transparent);border-top:3px solid var(--mss-c);
+  border-radius:12px;padding:12px 14px 14px;display:flex;flex-direction:column;min-width:0;}
+.mss-tile-label{font-size:0.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.mss-tile-value{font-family:var(--mono);font-size:2.5rem;font-weight:600;color:var(--fg);line-height:1.05;margin-top:6px;}
+.mss-tile-unit{font-size:0.66rem;color:var(--muted2);margin-top:auto;padding-top:6px;}
+@media(max-width:1100px){.mss-tiles{grid-template-columns:repeat(2,1fr);}.mss-top{grid-template-columns:1fr;}}
+@media(max-width:560px){.mss-tiles{grid-template-columns:1fr;}.mss-tile-value{font-size:2.1rem;}}
 </style>
 </head>
 <body>
@@ -1858,6 +1884,10 @@ const I18N = {
     btn_ble: "🔵 VO₂Smart BLE",
     btn_wired: "🔌 USB/Wired",
     btn_hr: "💓 FC Monitor",
+    nav_mss: "Comparativa MSS",
+    mss_stage_time: "Tiempo etapa:",
+    mss_vevo2_unit: "equiv. O2",
+    mss_stage_prefix: "Etapa",
     nav_main: "Principal",
     nav_dashboard: "Dashboard",
     nav_charts: "Gráficos",
@@ -2056,6 +2086,10 @@ const I18N = {
     btn_ble: "🔵 VO₂Smart BLE",
     btn_wired: "🔌 USB/Wired",
     btn_hr: "💓 HR Monitor",
+    nav_mss: "MSS Compare",
+    mss_stage_time: "Stage time:",
+    mss_vevo2_unit: "O2 equiv.",
+    mss_stage_prefix: "Stage",
     nav_main: "Main",
     nav_dashboard: "Dashboard",
     nav_charts: "Charts",
@@ -2253,6 +2287,10 @@ const I18N = {
     btn_ble: "🔵 VO₂Smart BLE",
     btn_wired: "🔌 USB/Wired",
     btn_hr: "💓 Monitor FC",
+    nav_mss: "Comparativo MSS",
+    mss_stage_time: "Tempo da etapa:",
+    mss_vevo2_unit: "equiv. O2",
+    mss_stage_prefix: "Etapa",
     nav_main: "Principal",
     nav_dashboard: "Painel",
     nav_charts: "Gráficos",
@@ -4355,6 +4393,13 @@ function initCharts(){
     {label:'CHO g/min',data:G.hist.cho,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.1)',fill:true,borderWidth:2,tension:0.35,pointRadius:0}
   ],{legend:true,yLabel:'g/min'});
 
+  // ── Comparativa MSS: tendencia VO₂/VE/HR (portado desde vo2lab) ──
+  G.charts.mss=mkLine('mss-trend-chart',[
+    {label:"V'O₂ ml/kg/min",data:[],borderColor:'#e11d48',backgroundColor:'rgba(225,29,72,0.08)',borderWidth:2,fill:true,tension:0.35,pointRadius:0,yAxisID:'y'},
+    {label:"V'E L/min",data:[],borderColor:'#64748b',backgroundColor:'transparent',borderWidth:1.8,tension:0.35,pointRadius:0,yAxisID:'y'},
+    {label:'HR bpm',data:[],borderColor:'#7c3aed',backgroundColor:'transparent',borderWidth:1.8,tension:0.35,pointRadius:0,yAxisID:'yR'}
+  ],{legend:true,yLabel:'VO₂ / VE',yR:'HR bpm'});
+
   G.charts.mc={
     vo2:mkMini('mc-vo2','#d6da13'),
     vco2:mkMini('mc-vco2','#ff4d6d'),
@@ -5229,6 +5274,32 @@ function processData(d){
   const _useCorr=CL.enabled&&CL.FIX_VE_RATIOS&&!isDemo;
   const _veq=computeVentEquiv(ve_c,vo2ml,vco2ml,_useCorr);
   let veVO2=_veq.veVO2, veVCO2=_veq.veVCO2;
+
+  // ── Comparativa MSS: actualizar tiles + tiempo etapa (portado desde vo2lab) ──
+  try {
+    const weight=(typeof _p!=='undefined'&&_p&&safeN(_p.weight)>0)?safeN(_p.weight):(safeN(getPatient&&getPatient().weight)||0);
+    const vo2absL=weight>0?(vo2*weight/1000):0;
+    const vco2absL=weight>0?(vco2*weight/1000):0;
+    setText('mss-hr',hr>0?hr.toFixed(0):'--');
+    setText('mss-vo2abs',vo2absL>0?vo2absL.toFixed(2):'--');
+    setText('mss-vo2kg',vo2>0?vo2.toFixed(1):'--');
+    setText('mss-ve',ve_c>0?ve_c.toFixed(1):'--');
+    setText('mss-vevo2',veVO2>0?veVO2.toFixed(1):'--');
+    setText('mss-vco2abs',vco2absL>0?vco2absL.toFixed(2):'--');
+    setText('mss-rer',rerDisplay>0?rerDisplay.toFixed(2):'--');
+    setText('mss-bf',rr_c>0?rr_c.toFixed(0):'--');
+    const rt=G.protocolRuntime;
+    const stagePrefix=t('mss_stage_prefix','Etapa');
+    let stepStr='00:00';
+    if(rt&&rt.active&&Array.isArray(rt.active.stages)&&rt.active.stages.length){
+      const stage=rt.active.stages[Math.min(rt.stageIndex||0,rt.active.stages.length-1)]||null;
+      const stageSec=Math.max(1,Number(stage&&stage.sec)||1);
+      const stageElapsed=Math.round((rt.stageProgress||0)*stageSec);
+      stepStr=String(Math.floor(stageElapsed/60)).padStart(2,'0')+':'+String(stageElapsed%60).padStart(2,'0');
+    }
+    setText('mss-step-time',stepStr);
+  } catch(_e){}
+
   const cal=calcHybrid(vo2ml,vco2ml,rer);
 
   // Elapsed
@@ -5545,6 +5616,7 @@ function processData(d){
   pushChart(G.charts.hrv,[lastRR],ts);
   pushChart(G.charts.o2pulse,[o2pulse],ts);
   pushChart(G.charts.pet,[peto2,petco2],ts);
+  if(G.charts.mss)pushChart(G.charts.mss,[vo2,ve_c,hr],ts); // Comparativa MSS
   // Scatter
   if(G.charts.fcvo2&&hr>0&&vo2>0){
     G.charts.fcvo2.data.datasets[0].data.push({x:vo2,y:hr});
@@ -8448,6 +8520,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260408-1');
         <button class="nav-item" draggable="true" data-page="diagnostico" onclick="goPage('diagnostico',this)"><span class="icon">🔧</span><span data-i18n="nav_diagnostics">Diagnóstico</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="informe" onclick="goPage('informe',this)"><span class="icon">📄</span><span data-i18n="nav_report">Informe</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="bariatrico" onclick="goPage('bariatrico',this)"><span class="icon">🏥</span><span>Bariátrico</span><span class="drag-handle">⋮⋮</span></button>
+        <button class="nav-item" draggable="true" data-page="mss" onclick="goPage('mss',this)"><span class="icon">🆚</span><span data-i18n="nav_mss">Comparativa MSS</span><span class="drag-handle">⋮⋮</span></button>
       </nav>
       <div style="padding:12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:6px;">
         <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="toggleSimulation()" data-i18n="nav_demo">🎲 Demo</button>
@@ -8723,6 +8796,39 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260408-1');
       </div>
 
       <!-- ══ PAGE: GRÁFICOS ══ -->
+      <!-- ══ PAGE: COMPARATIVA MSS (portado desde vo2lab) ══ -->
+      <div class="page" id="page-mss">
+        <div class="section-header">🆚 Comparativa en Tiempo Real — Layout MetaSoft Studio</div>
+        <div class="mss-hint">Distribución equivalente a CORTEX MetaLyzer 3B · MetaSoft Studio (Perform Test) para lectura lado-a-lado. Datos VO2Smart PRO en vivo.</div>
+
+        <!-- Fila superior: tendencia + workload -->
+        <div class="mss-top">
+          <div class="mss-trend-card">
+            <div class="mss-card-head">
+              <span class="mss-card-title">V'O₂, V'E, HR · Q</span>
+              <span class="mss-step-time"><span data-i18n="mss_stage_time">Tiempo etapa:</span> <b id="mss-step-time">00:00</b></span>
+            </div>
+            <div class="mss-trend-body"><canvas id="mss-trend-chart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Grid de tiles métricos 2×4 (estilo MetaSoft) -->
+        <div class="mss-tiles">
+          <div class="mss-tile" style="--mss-c:#7c3aed;"><div class="mss-tile-label">HR</div><div class="mss-tile-value" id="mss-hr">--</div><div class="mss-tile-unit">bpm</div></div>
+          <div class="mss-tile" style="--mss-c:#e11d48;"><div class="mss-tile-label">V'O₂</div><div class="mss-tile-value" id="mss-vo2abs">--</div><div class="mss-tile-unit">L/min</div></div>
+          <div class="mss-tile" style="--mss-c:#e11d48;"><div class="mss-tile-label">V'O₂/kg</div><div class="mss-tile-value" id="mss-vo2kg">--</div><div class="mss-tile-unit">ml/kg/min</div></div>
+          <div class="mss-tile" style="--mss-c:#64748b;"><div class="mss-tile-label">V'E</div><div class="mss-tile-value" id="mss-ve">--</div><div class="mss-tile-unit">L/min</div></div>
+          <div class="mss-tile" style="--mss-c:#64748b;"><div class="mss-tile-label">V'E/V'O₂</div><div class="mss-tile-value" id="mss-vevo2">--</div><div class="mss-tile-unit" data-i18n="mss_vevo2_unit">equiv. O2</div></div>
+          <div class="mss-tile" style="--mss-c:#475569;"><div class="mss-tile-label">V'CO₂</div><div class="mss-tile-value" id="mss-vco2abs">--</div><div class="mss-tile-unit">L/min</div></div>
+          <div class="mss-tile" style="--mss-c:#0f172a;"><div class="mss-tile-label">RER</div><div class="mss-tile-value" id="mss-rer">--</div><div class="mss-tile-unit">VCO₂/VO₂</div></div>
+          <div class="mss-tile" style="--mss-c:#16a34a;"><div class="mss-tile-label">BF</div><div class="mss-tile-value" id="mss-bf">--</div><div class="mss-tile-unit">resp/min</div></div>
+        </div>
+
+        <div class="info-box" style="margin-top:12px;">
+          <strong>Comparativa directa.</strong> Esta vista reorganiza las variables BxB del VO2Smart PRO en la misma jerarquía visual del MetaSoft Studio para facilitar la lectura simultánea contra el CORTEX MetaLyzer 3B durante la validación. La carga en W se infiere desde el protocolo activo; la cadencia en rpm queda como <code>N/D</code> hasta contar con una fuente dedicada del ergómetro.
+        </div>
+      </div>
+
       <div class="page" id="page-graficos">
         <div class="section-header" data-i18n="charts_title">📈 Tendencias en Tiempo Real</div>
         <!-- Chart view mode: Live (scrolling) vs Full Test -->
