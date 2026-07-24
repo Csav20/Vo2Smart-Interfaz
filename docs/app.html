@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>VO₂Smart PRO v5</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="console.warn('Chart.js CDN failed — charts will not render. Check network connection.')"></script>
@@ -1285,6 +1285,24 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .protocol-select{width:100%;max-width:100%;}
   .test-timer{font-size:1.3rem;}
   canvas{max-width:100%;}
+}
+
+/* ══ iPhone / iOS Safari — anti auto-zoom + altura dinámica + safe-area (notch / Dynamic Island / home indicator) ══ */
+@media(max-width:768px){
+  input,select,textarea{font-size:16px !important;}
+}
+@supports(min-height:100dvh){
+  body,.app{min-height:100dvh;}
+  .main{height:calc(100dvh - 60px);}
+}
+@supports(padding:max(0px)){
+  .topbar{padding-top:max(0px,env(safe-area-inset-top));}
+  #splash{padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom));}
+  .content{
+    padding-left:max(20px,env(safe-area-inset-left));
+    padding-right:max(20px,env(safe-area-inset-right));
+    padding-bottom:max(16px,env(safe-area-inset-bottom));
+  }
 }
 
 /* ════════════════════════════════════════════════
