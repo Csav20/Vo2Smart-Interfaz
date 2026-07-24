@@ -1275,6 +1275,22 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .report-calo-subgrid,.report-calo-info-grid,.report-calo-clinical{grid-template-columns:1fr;}
   .topbar-inner{height:auto;padding:8px 0;}
 }
+/* ── RESPONSIVE TABLET/MEDIO 760–1200px — compactar topbar-right (evita wrap desordenado en tablet) ── */
+@media(max-width:1200px){
+  .topbar-right{gap:6px;}
+  .topbar-right .btn-sm{padding:6px 10px;font-size:0.72rem;}
+  .brand-badge{display:none;}
+}
+@media(max-width:1024px){
+  #topStatus{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;display:inline-block;vertical-align:middle;}
+  #lang-toggle .toggle-btn{padding:4px 7px;font-size:0.68rem;}
+}
+@media(max-width:900px){
+  #topTime{display:none;}
+}
+@media(max-width:480px){
+  .borg-grid{grid-template-columns:repeat(3,1fr);}
+}
 
 /* ── RESPONSIVE MÓVIL — fix overflow flexbox (min-width:0) + splash/topbar/controles ── */
 .main{min-width:0;}
