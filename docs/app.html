@@ -376,6 +376,56 @@ body{font-family:var(--body);background:var(--bg);color:var(--text-page);min-hei
 .rec-dot.on{display:block;}
 @keyframes recPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
+/* ── PANEL DE PRUEBA ACOPLADO AL HEADER (móvil) ──────────────────────────────
+   En un teléfono el .test-control-bar se apila en vertical (cronómetro + etiqueta
+   de fase + selector de protocolo a ancho completo + 5 botones) y se come la
+   primera pantalla entera: las métricas — lo único que hay que mirar mientras
+   corre la prueba — quedan fuera del viewport. Con la prueba en marcha y en
+   ≤768px, syncTestBarDock() lo mueve dentro de .topbar y esta clase lo aplana a
+   una sola franja. Efecto secundario deseado: al vivir en el header sigue
+   visible aunque el usuario navegue a otra página. */
+.test-dock{display:none;}
+.test-dock.on{display:block;max-width:1600px;margin:0 auto;}
+/* La especificidad de dos clases gana al `.test-control-bar{flex-direction:column}`
+   del @media(max-width:768px) base, que está más abajo en la hoja. */
+.test-control-bar.test-bar-docked{flex-direction:row;align-items:center;}
+.test-bar-docked{
+  position:static;margin:0;border-radius:0;border:none;box-shadow:none;
+  border-top:1px solid var(--border2);
+  padding:6px 0;gap:7px;
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+}
+.test-bar-docked::before{display:none;}
+.test-bar-docked > *{flex-shrink:0;}
+.test-bar-docked .test-timer{font-size:1.05rem;min-width:0;letter-spacing:0;}
+.test-bar-docked .test-phase-label{font-size:0.58rem;padding:2px 6px;letter-spacing:0.5px;}
+.test-bar-docked .protocol-selector{min-width:0;flex-shrink:1;}
+.test-bar-docked .protocol-select{
+  min-width:0;max-width:112px;font-size:0.62rem;padding:3px 6px;
+  text-overflow:ellipsis;
+}
+/* Ocultar los botones inoperantes del estado actual libera el ancho que hace que
+   la franja quepa en 390px: en marcha desaparece «Iniciar», en pausa «Pausa» y
+   «Fase». Solo dentro del header — en escritorio siguen visibles en gris. */
+.test-bar-docked .btn[disabled]{display:none;}
+.test-bar-docked .btn{font-size:0.66rem;padding:5px 8px;}
+.test-bar-docked > div:last-child{margin-left:auto;gap:5px;}
+
+/* Con la prueba en marcha en móvil, el header cede su espacio a las métricas: el
+   equipo ya está conectado, así que los botones de conexión, el selector de idioma
+   y la identidad de marca no aportan nada durante la medición — y entre todos
+   sumaban ~90px de los 844 de la pantalla. Vuelven al detener la prueba. */
+@media(max-width:768px){
+  body.test-docked .brand-badge,
+  body.test-docked .topbar-nation,
+  body.test-docked #lang-toggle,
+  body.test-docked .topbar-right > .btn{display:none;}
+  body.test-docked .topbar-inner{height:auto;padding:4px 0;gap:6px;}
+  body.test-docked .brand-name{font-size:0.95rem;}
+  body.test-docked .brand-icon{width:26px;height:26px;}
+  body.test-docked .brand-icon svg{width:26px;height:26px;}
+}
+
 .protocol-selector{
   display:flex;align-items:center;gap:8px;
 }
@@ -1539,8 +1589,11 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .sidebar-nav{padding:5px 6px;gap:3px;align-items:center;}
   .nav-item{padding:6px 11px;font-size:0.78rem;gap:6px;border-radius:8px;align-self:center;height:auto;flex:0 0 auto;line-height:1.1;}
   .nav-item .icon{font-size:0.95rem;}
-  /* Footer Demo/reset/patente tiene inline style="display:flex" → requiere !important para ocultarlo en la barra horizontal */
-  .sidebar > div:last-child{display:none !important;}
+  /* En la barra horizontal solo cabe la navegacion. `> div:last-child` fallaba en
+     vo2lab, donde el footer Demo/reset/patente dejo de ser el ultimo hijo y sus
+     94px estiraban la barra a 101px: se selecciona por exclusion, no por posicion.
+     El !important es por los inline style="display:flex" de esos bloques. */
+  .sidebar > *:not(.sidebar-nav){display:none !important;}
 }
 @supports(padding:max(0px)){
   .topbar{padding-top:max(0px,env(safe-area-inset-top));}
@@ -4361,7 +4414,41 @@ function updateTestUI(){
     btnMarker.disabled=true;btnPhase.disabled=true;
     pSelect.disabled=false;
   }
+  syncTestBarDock();
 }
+
+// Posición original del panel dentro de #page-dashboard, para devolverlo intacto
+// al detener la prueba o al volver a un ancho de escritorio.
+let _testBarHome=null;
+
+function syncTestBarDock(){
+  const bar=document.getElementById('test-bar');
+  const dock=document.getElementById('test-dock');
+  if(!bar||!dock)return;
+  if(!_testBarHome)_testBarHome={parent:bar.parentNode,next:bar.nextSibling};
+  const isMobile=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+  const active=(G.testState==='running'||G.testState==='paused');
+  const shouldDock=isMobile&&active;
+  const isDocked=(bar.parentNode===dock);
+  if(shouldDock&&!isDocked){
+    dock.appendChild(bar);
+    bar.classList.add('test-bar-docked');
+    dock.classList.add('on');
+    document.body.classList.add('test-docked');
+  }else if(!shouldDock&&isDocked){
+    _testBarHome.parent.insertBefore(bar,_testBarHome.next);
+    bar.classList.remove('test-bar-docked');
+    dock.classList.remove('on');
+    document.body.classList.remove('test-docked');
+  }
+}
+
+// Rotar el teléfono o abrir el dashboard en una tablet cruza el umbral de 768px
+// sin que cambie el estado de la prueba, así que hay que reevaluar el acople.
+addEventListener('resize',(function(){
+  let t=null;
+  return function(){clearTimeout(t);t=setTimeout(syncTestBarDock,150);};
+})());
 
 // ═══════════════════════════════════════════════════
 // DIAGNOSTICS & REMOTE COMMANDS
@@ -13173,6 +13260,8 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <span style="font-size:0.75rem;color:rgba(255,255,255,0.75);font-family:var(--mono);" id="topTime">--:--:--</span>
       </div>
     </div>
+    <!-- Destino del panel de prueba en móvil — lo llena syncTestBarDock() -->
+    <div class="test-dock" id="test-dock"></div>
   </div>
   <!-- Strip de colores nacionales: Chile rojo/blanco/azul · sep · Suiza rojo/blanco/rojo -->
   <div class="topbar-strip">
