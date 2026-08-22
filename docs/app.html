@@ -1455,6 +1455,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
   .brand-badge,.topbar-nation,.sensirion-badge{display:none;}
 }
 
+/* deploy-layer: aplicada por tools/deploy/build_app.py */
 /* ── RESPONSIVE TABLET/MEDIO 760–1200px — compactar topbar-right (evita wrap desordenado en tablet) ── */
 @media(max-width:1200px){
   .topbar-right{gap:6px;}
@@ -4037,8 +4038,8 @@ function startTest(){
     return;
   }
   // Show protocol modal or go direct
-  // FIX móvil/iOS: el modal protocol-overlay no es responsive (botón "Continuar" inaccesible)
-  // → en pantallas ≤768px se salta y arranca directo. En desktop mantiene el aviso.
+  // FIX movil/iOS: el modal protocol-overlay no es responsive (boton "Continuar" inaccesible)
+  // -> en pantallas <=768px se salta y arranca directo. En desktop mantiene el aviso.
   var _isMobileStart = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
   if(_protocolSkipSession || _isMobileStart){
     _doStartTest();
@@ -16977,6 +16978,7 @@ function calCO2Execute(){
   </div>
 </div>
 
+<!-- deploy-layer: aplicada por tools/deploy/build_app.py -->
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
 <script>
 /* ── Puente Bluefy: iOS + sin Web Bluetooth (Safari/WebKit) → ofrecer relanzar en Bluefy (Web BLE browser) ── */
