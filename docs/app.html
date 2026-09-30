@@ -10625,7 +10625,13 @@ function _gwSyncLink(g,now){
   if(!st)return;
   if(feeding){
     const label='Gateway ESP-NOW · '+(n.id||n.src);
-    if(st.textContent!==label)setConnected(true,label);
+    // [GW-LINK-FIX-2026-09-30] No pisar el aviso de sensor congelado. setSensorStale()
+    // cambia el texto de la barra; re-afirmar aquí cada segundo llamaba a
+    // setConnected(), que pone G._sensorStale=false y reinicia _lastO2ChangeTs:
+    // con el gateway, un SBN41 congelado no se avisaba nunca.
+    const dot=document.getElementById('topDot');
+    const staleShown=!!(dot&&dot.classList.contains('stale'));
+    if(!staleShown && st.textContent!==label)setConnected(true,label);
     g.linkShown=true;
   }else if(g.linkShown){
     g.linkShown=false;
