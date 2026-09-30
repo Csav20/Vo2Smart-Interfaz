@@ -3205,7 +3205,7 @@ const I18N = {
     mss_vevo2_unit: "equiv. O2",
     mss_stage_prefix: "Etapa",
     mss_rpm_na: "N/D",
-    dash_notice: "Sin conexión BLE. Presiona \"VO₂Smart BLE\" en la barra superior o activa el modo Demo.",
+    dash_notice: "Sin equipo conectado. Presiona \"VO₂Smart BLE\" en la barra superior, conecta el receptor ESP-NOW (panel Gateway) o activa el modo Demo.",
     test_standby: "STANDBY",
     test_rest: "REPOSO",
     test_prep: "PREPARACIÓN",
@@ -3420,7 +3420,7 @@ const I18N = {
     mss_vevo2_unit: "O2 equiv.",
     mss_stage_prefix: "Stage",
     mss_rpm_na: "N/A",
-    dash_notice: "No BLE connection. Press \"VO₂Smart BLE\" in the top bar or enable Demo mode.",
+    dash_notice: "No device connected. Press \"VO₂Smart BLE\" in the top bar, connect the ESP-NOW receiver (Gateway panel) or enable Demo mode.",
     test_standby: "STANDBY",
     test_rest: "REST",
     test_prep: "PREPARATION",
@@ -3635,7 +3635,7 @@ const I18N = {
     mss_vevo2_unit: "equiv. O2",
     mss_stage_prefix: "Etapa",
     mss_rpm_na: "N/D",
-    dash_notice: "Sem conexão BLE. Pressione \"VO₂Smart BLE\" na barra superior ou ative o modo Demo.",
+    dash_notice: "Nenhum equipamento conectado. Pressione \"VO₂Smart BLE\" na barra superior, conecte o receptor ESP-NOW (painel Gateway) ou ative o modo Demo.",
     test_standby: "STANDBY",
     test_rest: "REPOUSO",
     test_prep: "PREPARAÇÃO",
@@ -10566,11 +10566,47 @@ function gwSelectSource(src){
 // CONGELADO con la última edad ("2s") y aparenta enlace vivo — el mismo engaño
 // que el rótulo de edad existe para evitar. Detectado en el banco de pruebas
 // antes de tocar el dashboard.
+// ── Estado de conexión visible cuando el gateway ALIMENTA la sesión ─────────
+// [GW-LINK-2026-09-30] La nota de gwConnect() explica por qué el receptor no pasa
+// por setConnected() al abrir el puerto: abrir el puerto no es tener equipo. Pero
+// eso dejaba la barra en "desconectado", el aviso "Sin conexión BLE…" visible y
+// las métricas en esqueleto MIENTRAS el gateway entregaba datos a la sesión — el
+// operador veía un equipo operativo rotulado como ausente.
+//
+// Criterio = el mismo de processGatewayLine() para llamar a processData(): nodo
+// seleccionado, real (no demo), con tramas frescas (≤10 s, igual que el rótulo
+// SIN DATOS del panel) y sin BLE vivo (R-DASH-05: si el BLE está, manda el BLE y
+// él es quien pinta la barra). No toca G.serialConnected ni G.serialWriter.
+//
+// Se re-afirma comparando con el texto de la barra y no con un flag propio: los
+// caminos de desconexión BLE/serial llaman setConnected(false) sin saber del
+// gateway, y un flag quedaría creyendo que la barra sigue en "Gateway".
+function _gwSyncLink(g,now){
+  const n=g.sel?g.nodes[g.sel]:null;
+  const fresh=!!(n&&!n.demo&&n.frames&&(now-(n.last||0))<=10000);
+  const feeding=!!(g.port&&fresh&&!_gwBleLive()&&!G.serialConnected&&!G.simOn);
+  const st=document.getElementById('topStatus');
+  if(!st)return;
+  if(feeding){
+    const label='Gateway ESP-NOW · '+(n.id||n.src);
+    if(st.textContent!==label)setConnected(true,label);
+    g.linkShown=true;
+  }else if(g.linkShown){
+    g.linkShown=false;
+    // Solo se baja lo que el gateway levantó: con BLE, serial o demo activos, la
+    // barra es de ellos.
+    if(!_gwBleLive()&&!G.bleCh&&!G.bleApiCh&&!G.serialConnected&&!G.simOn){
+      setConnected(false,g.port?'Gateway: sin datos del equipo':t('status_disconnected'));
+    }
+  }
+}
+
 function _gwRender(){
   const g=_gw();
   const now=Date.now();
   if(now-g.lastRender<250)return;
   g.lastRender=now;
+  _gwSyncLink(g,now);
 
   let box=document.getElementById('gw-panel');
   if(!box){
@@ -15363,7 +15399,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
       <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
         <!-- Connection notice -->
-        <div class="notice" id="dash-notice" data-i18n="dash_notice">Sin conexión BLE. Presiona "VO₂Smart BLE" en la barra superior o activa el modo Demo.</div>
+        <div class="notice" id="dash-notice" data-i18n="dash_notice">Sin equipo conectado. Presiona "VO₂Smart BLE" en la barra superior, conecta el receptor ESP-NOW (panel Gateway) o activa el modo Demo.</div>
 
         <!-- M-8: banner de FALLA de sensor — campo "s" del stream 1 Hz (main.cpp:3160).
              bit0 canal O₂ muerto · bit3 SDP810 stale · bit4 tramas SDP con CRC malo.
