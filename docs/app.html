@@ -6095,7 +6095,31 @@ function _applyDeviceFrcState(r){
     G._calO2Done=false; G._calO2Record=null;
     toast('El dispositivo no registra FRC O₂ (¿reinicio del equipo?) — recalibra','error');
   }
-  if(co2Age>0 && !G._calCO2Done){
+  // [CAL-GW-2026-09-30] Mismo criterio de aceptación que el eco done:1 y que
+  // sek-sbn41-wizard.html: residual |co2 − 0,04| ≤ CALCO2_RESID_MAX. Antes el readback
+  // aceptaba cualquier frc_co2>0, así que la MISMA FRC era rechazada por el wizard y
+  // aceptada aquí cuando el done:1 no llegaba — y por el receptor ESP-NOW no llega
+  // NUNCA: el firmware entrega el done:1 diferido solo por BLE o serial
+  // (main.cpp, cierre de _frcCo2Pending), así que esta era la única ruta del gateway.
+  // frc_co2_resid es el mismo sbn41_co2_pct que viaja en el done:1 (vol%).
+  // Sin el campo (firmware previo) no hay con qué juzgar: se conserva el comportamiento.
+  const _residKnown = (r.frc_co2_resid !== undefined && r.frc_co2_resid !== null);
+  const _residOk    = !_residKnown ||
+                      Math.abs(safeN(r.frc_co2_resid, 0.04) - 0.04) <= CALCO2_RESID_MAX;
+  if((co2Age>0 || G._devFrcNv) && !G._calCO2Done && !_residOk){
+    const _msg = 'Residual de CO₂ de la FRC del equipo fuera de banda: '
+               + safeN(r.frc_co2_resid,0).toFixed(3) + ' vol% (esperado 0,04 ± '
+               + CALCO2_RESID_MAX.toFixed(2) + '). Ventila el sensor y repite';
+    // Intento en curso (wizard o botón): se falla con el motivo real. Sin intento
+    // (sincronización al conectar): se avisa una vez y el estado queda sin calibrar.
+    if(_calCO2VerifyTimer || _calCO2AckTimer || _isCalWizardOpen()){
+      if(_calCO2VerifyTimer){ clearTimeout(_calCO2VerifyTimer); _calCO2VerifyTimer=null; }
+      requestAnimationFrame(()=>_calCO2Fail(_msg));
+    }else if(!G._calCO2ResidWarned){
+      G._calCO2ResidWarned = true;
+      toast(_msg,'error');
+    }
+  }else if(co2Age>0 && !G._calCO2Done){
     _calCO2Complete('device-config');
   }else if(co2Age===0 && G._devFrcNv && !G._calCO2Done){
     _calCO2Complete('device-nvs');
@@ -6178,6 +6202,7 @@ function _onDeviceReboot(){
   G._calCO2Done=false; G._calCO2Skipped=false; G._calCO2Anchoring=false;
   G._calO2Record=null; G._calCO2Record=null;   G._calO2FailCount=0;
   G._calVerifyFailed=false;   // F: el equipo reinició — la revalidación se rehace
+  G._calCO2ResidWarned=false;
   // M-1r: el reboot borra las anclas del sensor, incluida una recuperada por FORCE.
   // El modo Recuperación vuelve a estar disponible y su cronómetro de ventilación
   // se invalida — los 60 s medidos antes del reinicio no describen el estado actual.
@@ -6216,7 +6241,12 @@ function _calVerifyResult(r){
     _saveFrcSeal(G._devFrcSn, {ts:Date.now(), estimated:false, anchor:safeN(r.anchor,0),
                                verifiedO2:safeN(r.o2,0)});
     if(!G._calO2Done)  _calO2Complete('device-nvs');
-    if(!G._calCO2Done) _calCO2Complete('device-nvs');
+    // [CAL-GW-2026-09-30] CAL_VERIFY juzga el O₂ contra ambiente; el CO₂ sellado se
+    // acepta solo si su residual está en la misma banda que exige el wizard SEK.
+    if(!G._calCO2Done){
+      if(Math.abs(safeN(G._devFrcCo2Resid,0.04)-0.04) <= CALCO2_RESID_MAX) _calCO2Complete('device-nvs');
+      else toast('CO₂ sellado con residual '+safeN(G._devFrcCo2Resid,0).toFixed(3)+' vol% fuera de banda — recalibra CO₂','error');
+    }
     toast('FRC vigente verificada · O₂ '+safeN(r.o2,0).toFixed(2)+' %','success');
   }else{
     // F: sin esto el rechazo dejaba al operador sin ruta: openCalO2Wizard() volvía a
@@ -6381,7 +6411,7 @@ function _calCO2AutoAnchor(){
               hint.textContent='Encadenado desde el ancla de O₂ — el sensor ya lleva el '
                               +'warm-up completo en este mismo aire ambiente. Sin purga adicional.'; }
   }
-  if(!_calO2LinkUp()){ _calCO2Fail('Sin conexión BLE/Serial — el comando no salió del navegador. Reconecta el equipo y reintenta.'); return; }
+  if(!_calO2LinkUp()){ _calCO2Fail('Sin conexión (BLE, USB ni receptor ESP-NOW) — el comando no salió del navegador. Reconecta el equipo y reintenta.'); return; }
   G._calCO2Anchoring=true;
   const stateEl=document.getElementById('calco2-wiz-state');
   const btn=document.getElementById('calco2-run-btn');
@@ -6404,12 +6434,17 @@ function _calCO2AutoAnchor(){
 // M-5: sin conexión el comando se descarta en _sendBLEImpl (devuelve null) y el
 // wizard consumía un intento contra la nada. El operador no tiene botón físico en
 // el equipo: el diagnóstico "no hay transporte" tiene que verse aquí.
+// [CAL-GW-2026-09-30] Incluye el receptor ESP-NOW. Antes solo BLE/serial: con el
+// gateway como única conexión, la línea que abre el wizard (gwDataActive) lo abría,
+// pero aquí se declaraba "sin conexión" y CAL_O2/CAL_CO2 no salían nunca — el
+// operador veía un asistente que fallaba siempre mientras el wizard SEK (BLE) sí
+// calibraba. sendBLECommand() ya enruta por gwSendCmd(); faltaba esta compuerta.
 function _calO2LinkUp(){
-  return !!(G.bleApiCh || G.bleCh || G.serialWriter);
+  return !!(cmdRouteAvailable() || G.serialConnected);
 }
 function _calO2Execute(){
   if(_calO2GasBlocked()){ toast('CAL_O2 bloqueada: el equipo reporta gas_ok:false','error'); return; }
-  if(!_calO2LinkUp()){ _calO2Fail('Sin conexión BLE/Serial — el comando no salió del navegador. Reconecta el equipo y reintenta.'); return; }
+  if(!_calO2LinkUp()){ _calO2Fail('Sin conexión (BLE, USB ni receptor ESP-NOW) — el comando no salió del navegador. Reconecta el equipo y reintenta.'); return; }
   // Feedback inmediato ANTES del envío (evita "no hay acción" si el canal tarda).
   const btn=document.getElementById('calo2-run-btn');
   const skip=document.getElementById('calo2-skip-btn');
@@ -6594,7 +6629,7 @@ function _calO2RecoveryVent(){
 
 function _calO2RecoveryExecute(){
   if(G._calO2ForceUsed){ toast('La recuperación ya se usó en esta sesión','error'); return; }
-  if(!_calO2LinkUp()){ toast('Sin conexión BLE/Serial — el comando no saldría del navegador','error'); return; }
+  if(!_calO2LinkUp()){ toast('Sin conexión (BLE, USB ni receptor ESP-NOW) — el comando no saldría del navegador','error'); return; }
   if(_calO2GasBlocked()){ toast('CAL_O2 bloqueada: el equipo reporta gas_ok:false','error'); return; }
   G._calO2ForceUsed    = true;   // un solo disparo por sesión, pase lo que pase después
   G._calO2ForcePending = true;   // marca como forzada el ancla que confirme el equipo
@@ -6795,6 +6830,7 @@ function _calCO2Complete(source){
   if(_calCO2AckTimer){ clearTimeout(_calCO2AckTimer); _calCO2AckTimer = null; }
   if(_calCO2VerifyTimer){ clearTimeout(_calCO2VerifyTimer); _calCO2VerifyTimer = null; }
   G._calCO2Done = true;
+  G._calCO2ResidWarned = false;
   G._calCO2Record = {done:true, skipped:false, ts:Date.now(), source:source||'device', previous:source==='previous',
                      deviceAgeS:(source==='device-config')?G._devFrcCo2S:0};
   _saveCalibrationSession({co2:true, co2Ts:Date.now()});
@@ -17103,7 +17139,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         }
 
         function laminarApplyManualK() {
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+          if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
           const k = laminarManualK();
           if (k === null) { toast('Ingresa una K valida','warn'); return; }
           if (k < 0.5 || k > 5.0) { toast('K fuera de rango [0.5–5.0]','error'); return; }
@@ -17172,7 +17208,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         }
 
         function laminarApplyK() {
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+          if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
           const k = laminarCalcK();
           if (k === null) { toast('Ingresa el volumen medido','warn'); return; }
           if (k < 0.5 || k > 5.0) { toast('K fuera de rango [0.5–5.0]','error'); return; }
@@ -17188,7 +17224,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         }
 
         function venturiApplyK() {
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+          if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
           const d2 = parseFloat(document.getElementById('cal-d2-input').value);
           const k = venturiK(d2);
           if (!k || k < 0.5 || k > 5.0) { toast('K fuera de rango [0.5–5.0]','error'); return; }
@@ -17206,7 +17242,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         // y no significa nada en un LFE (ahí el default es la unidad, config.h
         // LFE_CORRECTION_DEFAULT). Restaurar 1.060 en laminar metía un +6 % ciego.
         function venturiResetK() {
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+          if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
           const kDef  = flowDefaultK();
           const kStr  = kDef.toFixed(3);
           const motivo= (G.flow.element==='LAMINAR') ? 'default LFE' : 'baseline Cortex';
@@ -18278,7 +18314,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         // con el motivo y el botón de reintento. Único camino operativo: el equipo no
         // tiene control físico para forzar la FRC.
         function calO2Execute(){
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+          if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
           const el = document.getElementById('calo2-result');
           if(el) el.textContent = 'CAL_O2 enviado — esperando confirmación del dispositivo.';
           _calO2Execute();
@@ -18321,7 +18357,7 @@ function calCO2Execute(){
     toast('Este firmware no implementa CAL_CO2; use la verificación de señal sin recalibrar','warn');
     return;
   }
-  if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){ toast('Conecta BLE primero','warn'); return; }
+  if(!_calO2LinkUp()){ toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','warn'); return; }
   if(_calCO2TimerSec > 0 && !_calCO2TimerInterval){
     toast('Primero completa la purga ambiente de 30 s o usa calibración previa','warn');
     _setCO2ReadyState(false);
@@ -19310,7 +19346,7 @@ function calCO2Execute(){
         }
 
         function calWizToggleAuto(){
-          if(!_calFlow.armed&&!G.bleCh&&!G.bleApiCh&&!G.serialConnected){
+          if(!_calFlow.armed&&!_calO2LinkUp()){
             toast('Conecta el equipo antes de armar la captura','warn');return;
           }
           _calFlow.armed=!_calFlow.armed;
@@ -19857,7 +19893,7 @@ function calCO2Execute(){
         }
 
         function calWizActivate(){
-          if(!G.bleCh&&!G.bleApiCh&&!G.serialConnected){toast('Conecta BLE primero','error');return;}
+          if(!_calO2LinkUp()){toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)','error');return;}
           sendBLECommand('SET_PHASE:EXERCISE').then(()=>toast('EXERCISE activo — empuja la jeringa ~4s luego Capturar VT','success'));
         }
 
