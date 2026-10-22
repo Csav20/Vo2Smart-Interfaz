@@ -4037,10 +4037,11 @@ let G = {
   // HRV real data
   rrBuffer:[],       // real RR-intervals (ms) from BLE HR sensor
   rrTimestamps:[],   // timestamp of each RR arrival
+  rrFlags:[],        // RR_FLAG por RR (OK/ARTIFACT/SYNTH), paralelo a rrBuffer [RR-ART-2026-10-22]
   hrvMetrics:{rmssd:0,sdnn:0,pnn50:0,meanRR:0,lfhf:1.0},
   hrvBaseline:null,  // RMSSD at rest for SNA normalization
   snsIndex:50,pnsIndex:50,
-  snaHist:{labels:[],sns:[],pns:[],hrv:[]},  // temporal SNA chart data
+  snaHist:{labels:[],sns:[],pns:[],hrv:[],fc:[]},  // temporal SNA chart data
   cortexWs:null,
   charts:{},
   hist:{labels:[],vo2:[],vco2:[],hr:[],rer:[],ee:[],fat:[],cho:[],veVCO2:[],veVO2:[],ve:[],rr:[],zone:[]},
@@ -5196,7 +5197,7 @@ function _doStartTest(){
   // Fresh start — initialize everything
   G.session=[];
   G.fullHist={labels:[],tms:[],metNew:[],vo2:[],vco2:[],hr:[],rer:[],ee:[],ve:[],fat:[],cho:[],veVCO2:[],veVO2:[],o2pulse:[],peto2:[],petco2:[],ee1:[],ee2:[],ee3:[],hrv:[],rr:[],zone:[],phase:[]};
-  G.snaHist={labels:[],sns:[],pns:[],hrv:[]};
+  G.snaHist={labels:[],sns:[],pns:[],hrv:[],fc:[]};
   G.chartView='live';
   G.rawBuffer=[];
   G.epochBuffer=[];
@@ -5221,7 +5222,7 @@ function _doStartTest(){
   G.zoneTimers={z1:0,z2:0,z3:0,z4:0,z5:0};
   G.crossoverDetected=null;G.fatmaxDetected=null;G.prevFatPct=null;G.prevChoPct=null;
   G.kinetics={baseline:0,transitionStart:null,peak:0,tau:null,amplitude:null,valid:false,history:[]};
-  G.rrBuffer=[];G.rrTimestamps=[];
+  G.rrBuffer=[];G.rrTimestamps=[];G.rrFlags=[];
   G.lastZoneTs=null;
   G.testMarkers=[];
   G.testPhaseIndex=0;
@@ -7489,7 +7490,9 @@ function initSNATemporalChart(){
     data:{labels:[],datasets:[
       {label:'Simpático (SNS)',data:[],borderColor:'#FF8C00',backgroundColor:'rgba(255,140,0,0.1)',borderWidth:2.5,tension:0.4,fill:true,pointRadius:0,pointHoverRadius:5},
       {label:'Parasimpático (PNS)',data:[],borderColor:'#00C864',backgroundColor:'rgba(0,200,100,0.1)',borderWidth:2.5,tension:0.4,fill:true,pointRadius:0,pointHoverRadius:5},
-      {label:'HRV (RMSSD)',data:[],borderColor:'#00C8FF',backgroundColor:'transparent',borderWidth:2.5,borderDash:[5,5],tension:0.4,fill:false,pointRadius:0,pointHoverRadius:5}
+      {label:'HRV (RMSSD)',data:[],borderColor:'#00C8FF',backgroundColor:'transparent',borderWidth:2.5,borderDash:[5,5],tension:0.4,fill:false,pointRadius:0,pointHoverRadius:5},
+      // [SNA-FC-2026-10-22] FC en lpm sobre eje propio (y1): las otras series son índices 0–100
+      {label:'FC (lpm)',data:[],yAxisID:'y1',borderColor:'#E5484D',backgroundColor:'transparent',borderWidth:2,tension:0.3,fill:false,pointRadius:0,pointHoverRadius:5,spanGaps:false}
     ]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:0},
       interaction:{mode:'index',intersect:false},
@@ -7497,10 +7500,22 @@ function initSNATemporalChart(){
         title:{display:false}},
       scales:{
         x:{grid:{color:'rgba(20,30,50,0.09)'},ticks:{color:'rgba(30,41,59,0.62)',maxRotation:0,font:{size:9},maxTicksLimit:8}},
-        y:{min:0,max:100,grid:{color:'rgba(20,30,50,0.09)'},ticks:{color:'rgba(30,41,59,0.62)',font:{size:10}}}
+        y:{min:0,max:100,grid:{color:'rgba(20,30,50,0.09)'},ticks:{color:'rgba(30,41,59,0.62)',font:{size:10}},
+           title:{display:true,text:'Índice / HRV norm. (0–100)',color:'rgba(30,41,59,0.62)',font:{size:9}}},
+        y1:{position:'right',suggestedMin:40,suggestedMax:180,grid:{drawOnChartArea:false},
+            ticks:{color:'#E5484D',font:{size:10}},title:{display:true,text:'FC (lpm)',color:'#E5484D',font:{size:9}}}
       }
     }
   });
+}
+
+// [SNA-FC-2026-10-22] FC para el gráfico SNA: la de la banda si es reciente (≤5 s);
+// si no, la media del mismo buffer RR que alimenta RMSSD y el índice SNS. null = sin dato.
+const SNA_FC_FRESH_MS=5000;
+function snaCurrentHR(){
+  if(G.lastBleHR>0&&Date.now()-G.lastBleHRts<=SNA_FC_FRESH_MS)return G.lastBleHR;
+  const meanRR=G.hrvMetrics?.meanRR;
+  return meanRR>0?60000/meanRR:null;
 }
 
 function updateSNATemporalChart(){
@@ -7509,17 +7524,23 @@ function updateSNATemporalChart(){
   const h=G.snaHist;
   const now=new Date();
   h.labels.push(now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
-  h.sns.push(G.snsIndex);
-  h.pns.push(G.pnsIndex);
+  // [RR-ART-2026-10-22] ventana sin calidad → hueco en la curva, no el último índice
+  const hrvOk=G.hrvMetrics?.valid!==false;
+  h.sns.push(hrvOk?G.snsIndex:null);
+  h.pns.push(hrvOk?G.pnsIndex:null);
   const normHRV=Math.min(100,Math.max(0,(G.hrvMetrics.rmssd/100)*100));
-  h.hrv.push(Math.round(normHRV));
+  h.hrv.push(hrvOk?Math.round(normHRV):null);
+  if(!h.fc)h.fc=[];
+  const fc=snaCurrentHR();
+  h.fc.push(fc!=null?Math.round(fc):null);
   // Rolling window 60 points
   const MAX_SNA=60;
-  if(h.labels.length>MAX_SNA){h.labels.shift();h.sns.shift();h.pns.shift();h.hrv.shift();}
+  if(h.labels.length>MAX_SNA){h.labels.shift();h.sns.shift();h.pns.shift();h.hrv.shift();h.fc.shift();}
   ch.data.labels=h.labels;
   ch.data.datasets[0].data=h.sns;
   ch.data.datasets[1].data=h.pns;
   ch.data.datasets[2].data=h.hrv;
+  ch.data.datasets[3].data=h.fc;
   ch.update('none');
 }
 
@@ -11560,35 +11581,91 @@ async function connectWired(){
   }
 }
 
+// ══ MÓDULO: Calidad RR [RR-ART-2026-10-22] ══
+// Antes, el RR crudo entraba directo en RMSSD: un latido perdido (RR doble) o un ectópico
+// metía una diferencia de 400–800 ms y disparaba el RMSSD de toda la ventana de 120 s.
+// Ahora cada RR se marca al llegar y las métricas usan solo latidos válidos.
+// Clase B: RMSSD/SDNN/pNN50 pueden BAJAR (artefactos fuera) o pasar a '--' (calidad
+// insuficiente o RR sintéticos). Doc: docs/HRV_SNA_EVIDENCIA_Y_MEJORAS_2026-10-22.md
+const RR_FLAG={OK:0,ARTIFACT:1,SYNTH:2};
+const RR_SRC={BEAT:'beat',SYNTH:'synth'};
+const RR_ART_REL_TOL=0.20;  // |RR − mediana local| / mediana > 20 % → artefacto (criterio relativo, Malik)
+const RR_ART_REF_N=5;       // mediana de los 5 RR previos, crudos: robusta a ≤2 artefactos y se re-ancla sola
+const RR_ART_MIN_REF=3;     // con menos referencia no se juzga (inicio de registro)
+const RR_ART_MAX_PCT=5;     // > 5 % de latidos marcados en la ventana → no se publican métricas
+const HRV_MIN_OK_BEATS=6;   // mínimo previo del motor (no se cambia aquí; ver doc §4)
+const HRV_NN50_MS=50;
+
+function rrMedian(a){
+  const s=a.slice().sort((x,y)=>x-y), m=s.length>>1;
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+
+// Puro: marca un RR nuevo frente a la mediana de los RR previos (crudos).
+function rrClassify(rrMs,prevRaw,source){
+  if(source===RR_SRC.SYNTH)return RR_FLAG.SYNTH;
+  const ref=prevRaw.slice(-RR_ART_REF_N);
+  if(ref.length<RR_ART_MIN_REF)return RR_FLAG.OK;
+  const med=rrMedian(ref);
+  if(!(med>0.01))return RR_FLAG.OK;
+  return Math.abs(rrMs-med)/med>RR_ART_REL_TOL?RR_FLAG.ARTIFACT:RR_FLAG.OK;
+}
+
+// Puro: diferencias sucesivas solo entre latidos válidos CONTIGUOS (un artefacto corta el par).
+function hrvSuccessiveDiffs(rr,flags){
+  const diffs=[];
+  for(let i=1;i<rr.length;i++){
+    if(flags[i]===RR_FLAG.OK&&flags[i-1]===RR_FLAG.OK)diffs.push(Math.abs(rr[i]-rr[i-1]));
+  }
+  return diffs;
+}
+
+// Puro: calidad de la ventana. artPct excluye los sintéticos del denominador (no son latidos).
+function hrvWindowQuality(flags){
+  let nOk=0,nArt=0,nSynth=0;
+  for(const f of flags){
+    if(f===RR_FLAG.OK)nOk++;else if(f===RR_FLAG.ARTIFACT)nArt++;else nSynth++;
+  }
+  const nBeats=nOk+nArt;
+  const artPct=nBeats>0?100*nArt/nBeats:0;
+  let reason='';
+  if(nOk<HRV_MIN_OK_BEATS)reason=nSynth>0?'synth':'few';
+  else if(artPct>RR_ART_MAX_PCT)reason='art';
+  return {nOk,nArt,nSynth,artPct,valid:reason==='',reason};
+}
+
+// Puro: métricas de dominio del tiempo sobre latidos válidos.
+function computeHrvTimeDomain(rr,flags){
+  const q=hrvWindowQuality(flags);
+  const empty={rmssd:0,sdnn:0,pnn50:0,meanRR:0,lfhf:null,...q};
+  if(!q.valid)return empty;
+  const ok=rr.filter((v,i)=>flags[i]===RR_FLAG.OK);
+  const diffs=hrvSuccessiveDiffs(rr,flags);
+  if(diffs.length<HRV_MIN_OK_BEATS-1)return {...empty,valid:false,reason:'few'};
+  const rmssd=Math.sqrt(diffs.reduce((s,d)=>s+d*d,0)/diffs.length);
+  const meanRR=ok.reduce((s,v)=>s+v,0)/ok.length;
+  const sdnn=Math.sqrt(ok.reduce((s,v)=>s+(v-meanRR)**2,0)/ok.length);
+  const pnn50=100*diffs.filter(d=>d>HRV_NN50_MS).length/diffs.length;
+  // Cociente SDNN/RMSSD (NO es LF/HF espectral; se conserva el nombre de campo hasta el punto 2)
+  const lfhf=rmssd>0.01?sdnn/rmssd:null;
+  return {rmssd,sdnn,pnn50,meanRR,lfhf,...q};
+}
+
+const HRV_REASON_TXT={
+  few:'Recolectando RR',
+  art:'Calidad RR insuficiente',
+  synth:'Sin RR reales del sensor',
+};
+
 /* ── HRV COMPUTATION ENGINE ── */
 function computeHRV(){
-  const rr=G.rrBuffer;
-  if(rr.length<6)return;
-  // Successive differences for RMSSD and pNN50
-  const diffs=[];
-  let nn50=0;
-  for(let i=1;i<rr.length;i++){
-    const d=Math.abs(rr[i]-rr[i-1]);
-    diffs.push(d);
-    if(d>50)nn50++;
-  }
-  // RMSSD
-  const sumSqDiff=diffs.reduce((s,d)=>s+d*d,0);
-  const rmssd=Math.sqrt(sumSqDiff/diffs.length);
-  // SDNN
-  const meanRR=rr.reduce((s,v)=>s+v,0)/rr.length;
-  const varRR=rr.reduce((s,v)=>s+Math.pow(v-meanRR,2),0)/rr.length;
-  const sdnn=Math.sqrt(varRR);
-  // pNN50
-  const pnn50=(diffs.length>0)?(nn50/diffs.length)*100:0;
-  // LF/HF estimation (time-domain proxy: SDNN/RMSSD)
-  // Higher ratio = sympathetic dominance; lower = parasympathetic
-  const lfhf=rmssd>0?(sdnn/rmssd):1.0;
-
-  G.hrvMetrics={rmssd:rmssd,sdnn:sdnn,pnn50:pnn50,meanRR:meanRR,lfhf:lfhf};
+  const m=computeHrvTimeDomain(G.rrBuffer,G.rrFlags);
+  G.hrvMetrics=m;
+  if(!m.valid){hrvScheduleRender();return;}
+  const rmssd=m.rmssd, meanRR=m.meanRR;
 
   // Baseline: first stable measurement at rest (RMSSD > 10, enough samples)
-  if(!G.hrvBaseline&&rmssd>5&&rr.length>=20){
+  if(!G.hrvBaseline&&rmssd>5&&m.nOk>=20){
     G.hrvBaseline=rmssd;
   }
   // SNA balance
@@ -11602,11 +11679,60 @@ function computeHRV(){
     G.snsIndex=Math.round((snsRaw/total)*100);
     G.pnsIndex=100-G.snsIndex;
   }
-  updateHRVDisplay();
+  hrvScheduleRender();
+}
+
+// [RR-ART-2026-10-22] computeHRV corre dentro del handler BLE de la banda: el DOM se
+// pinta en el siguiente frame y una sola vez por frame (R-BLE-04, AP-21).
+function hrvScheduleRender(){
+  if(G._hrvRenderPending)return;
+  G._hrvRenderPending=true;
+  requestAnimationFrame(()=>{G._hrvRenderPending=false;updateHRVDisplay();});
+}
+
+function renderHrvQuality(m){
+  const n=G.rrBuffer.length;
+  let txt=n+' RR recibidos';
+  if(m.nArt!=null&&(m.nOk+m.nArt)>0)txt+=' · '+m.artPct.toFixed(1)+' % artefactos';
+  if(m.nSynth>0)txt+=' · '+m.nSynth+' sintéticos (FC)';
+  setText('hrv-count',txt);
+  const el=document.getElementById('hrv-quality');
+  if(!el)return;
+  if(m.valid){
+    el.textContent='Calidad RR: '+m.artPct.toFixed(1)+' % corregidos (≤ '+RR_ART_MAX_PCT+' %)';
+    el.style.color='var(--success)';
+  }else{
+    el.textContent=(HRV_REASON_TXT[m.reason]||'Sin datos')
+      +(m.reason==='art'?' — '+m.artPct.toFixed(1)+' % artefactos (> '+RR_ART_MAX_PCT+' %)':'');
+    el.style.color=m.reason==='few'?'var(--muted)':'var(--warn)';
+  }
+}
+
+// Ventana no publicable: '--' en todo lo que deriva de RR, nunca el último valor.
+function renderHrvSuppressed(m){
+  const why=HRV_REASON_TXT[m.reason]||'Sin datos';
+  ['hrv-big','dash-hrv-value','dash-sns-index','dash-pns-index'].forEach(id=>setText(id,'--'));
+  ['hrv-rmssd2','hrv-sdnn','hrv-meanrr'].forEach(id=>setText(id,'-- ms'));
+  setText('hrv-pnn50','--%');
+  setText('rmssd',why);
+  setText('lfhf','--');
+  ['sns-pct','pns-pct','sns-level','pns-level'].forEach(id=>setText(id,'--'));
+  setText('sna-label',why);
+  ['sym-status','vagal'].forEach(id=>{const e=document.getElementById(id);if(e){e.textContent='--';e.style.color='var(--muted)';}});
+  ['sns-bar','pns-bar'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.width='50%';});
+}
+
+// La FC no depende de la calidad RR: se pinta siempre (banda o media RR)
+function renderSnaFc(){
+  const fc=snaCurrentHR();
+  setText('dash-sna-fc',fc!=null?Math.round(fc):'--');
 }
 
 function updateHRVDisplay(){
   const m=G.hrvMetrics;
+  renderHrvQuality(m);
+  renderSnaFc();
+  if(m.valid===false){renderHrvSuppressed(m);updateSNATemporalChart();return;}
 
   // ── Valor principal RMSSD ──
   setText('hrv-big',m.rmssd>0?m.rmssd.toFixed(0):'--');
@@ -11614,12 +11740,12 @@ function updateHRVDisplay(){
   // ── Fila de 4 métricas ──
   setText('hrv-rmssd2',m.rmssd>0?m.rmssd.toFixed(0)+' ms':'-- ms');
   setText('hrv-sdnn',m.sdnn>0?m.sdnn.toFixed(0)+' ms':'-- ms');
-  setText('hrv-pnn50',m.pnn50>0?m.pnn50.toFixed(1)+'%':'--%');
+  setText('hrv-pnn50',m.rmssd>0?m.pnn50.toFixed(1)+'%':'--%');
   setText('hrv-meanrr',m.meanRR>0?m.meanRR.toFixed(0)+' ms':'-- ms');
 
   // ── Panel parasimpático ──
   setText('rmssd',m.rmssd>0?m.rmssd.toFixed(0)+' ms':'-- ms');
-  setText('lfhf',m.lfhf.toFixed(2));
+  setText('lfhf',m.lfhf!=null?m.lfhf.toFixed(2):'--');
 
   // ── Barra de balance SNA ──
   const snsPct=G.snsIndex,pnsPct=G.pnsIndex;
@@ -11637,7 +11763,21 @@ function updateHRVDisplay(){
   else if(pnsPct>65)snaLabel='Parasimpático dominante';
   else if(pnsPct>55)snaLabel='Recuperación activa';
   setText('sna-label',snaLabel);
+  renderSnaStatus(snsPct,pnsPct);
 
+  // ── Contador RR y calidad: renderHrvQuality() [RR-ART-2026-10-22] ──
+
+  // ── Dashboard SNA indices ──
+  setText('dash-sns-index',snsPct);
+  setText('dash-pns-index',pnsPct);
+  setText('dash-hrv-value',m.rmssd>0?m.rmssd.toFixed(0):'--');
+
+  // ── Update SNA temporal chart ──
+  updateSNATemporalChart();
+}
+
+// Extraída sin cambios de updateHRVDisplay() [RR-ART-2026-10-22]
+function renderSnaStatus(snsPct,pnsPct){
   // ── Estado simpático ──
   let symStatus='Equilibrio',symColor='var(--warn)';
   if(snsPct>65){symStatus='Activado';symColor='#e74c3c';}
@@ -11656,17 +11796,6 @@ function updateHRVDisplay(){
   const vagEl=document.getElementById('vagal');
   if(vagEl){vagEl.textContent=vagalStatus;vagEl.style.color=vagalColor;}
   setText('pns-level',pnsPct+'%');
-
-  // ── Contador RR y fuente en gráfico ──
-  setText('hrv-count',G.rrBuffer.length+' RR recibidos');
-
-  // ── Dashboard SNA indices ──
-  setText('dash-sns-index',snsPct);
-  setText('dash-pns-index',pnsPct);
-  setText('dash-hrv-value',m.rmssd>0?m.rmssd.toFixed(0):'--');
-
-  // ── Update SNA temporal chart ──
-  updateSNATemporalChart();
 }
 
 async function connectHR(){
@@ -11755,9 +11884,11 @@ async function connectHR(){
         }
       }
 
-      // Fallback: sintetizar RR desde FC si no hay RR reales
-      if(rrList.length===0&&hr>30&&hr<220)rrList.push(60000/hr);
-      if(hr>0)feedRR(rrList,hr);
+      // Fallback: sintetizar RR desde FC si no hay RR reales. Se marcan SYNTH: sirven
+      // para la FC, no para HRV [RR-ART-2026-10-22]
+      let rrSrc=RR_SRC.BEAT;
+      if(rrList.length===0&&hr>30&&hr<220){rrList.push(60000/hr);rrSrc=RR_SRC.SYNTH;}
+      if(hr>0)feedRR(rrList,hr,rrSrc);
     });
 
     G.hrDevice=dev;
@@ -11779,30 +11910,43 @@ async function connectHR(){
 }
 
 // Helper: alimenta RR-intervals al motor HRV
-function feedRR(rrList,hr){
+// source: RR_SRC.BEAT (RR del sensor) | RR_SRC.SYNTH (60000/FC, banda sin RR): los
+// sintéticos no son latidos y nunca entran en RMSSD/SDNN [RR-ART-2026-10-22].
+const RR_WINDOW_MS=120000;
+function feedRR(rrList,hr,source=RR_SRC.BEAT){
   const now=Date.now();
   // Persist latest BLE HR for use by processData when VO2 data arrives without HR
   if(hr>0){
     G.lastBleHR=hr;
     G.lastBleHRts=now;
   }
-  for(const rr of rrList){G.rrBuffer.push(rr);G.rrTimestamps.push(now);}
-  const cutoff=now-120000;
+  for(const rr of rrList){
+    G.rrFlags.push(rrClassify(rr,G.rrBuffer,source));
+    G.rrBuffer.push(rr);G.rrTimestamps.push(now);
+  }
+  const cutoff=now-RR_WINDOW_MS;
   while(G.rrTimestamps.length>0&&G.rrTimestamps[0]<cutoff){
-    G.rrTimestamps.shift();G.rrBuffer.shift();
+    G.rrTimestamps.shift();G.rrBuffer.shift();G.rrFlags.shift();
   }
-  if(G.rrBuffer.length>=6)computeHRV();
-  // Update HR display immediately (dashboard + mini chart) without re-processing all data
-  // This avoids duplicate chart entries and rawBuffer pollution
+  if(G.rrBuffer.length>=HRV_MIN_OK_BEATS)computeHRV();
   if(hr>0){
-    setText('d-hr',hr.toFixed(0));
     if(hr>G.hrPeak)G.hrPeak=hr;
-    const hrMax=getPatient().hrMax||190;
-    const hrRest=getPatient().hrRest||60;
-    const hrr=hrMax>hrRest?Math.round((hr-hrRest)/(hrMax-hrRest)*100):0;
-    setText('d-hrr',isFinite(hrr)?hrr:'--');
-    pushMini(G.charts.mc.hr,hr);
+    G._hrPendingRender=hr;
+    requestAnimationFrame(renderLiveHR);   // R-BLE-04: sin DOM en el handler de la banda
   }
+}
+
+// HR display (dashboard + mini chart) without re-processing all data
+function renderLiveHR(){
+  const hr=G._hrPendingRender;
+  if(!(hr>0))return;
+  G._hrPendingRender=0;
+  setText('d-hr',hr.toFixed(0));
+  const hrMax=getPatient().hrMax||190;
+  const hrRest=getPatient().hrRest||60;
+  const hrr=hrMax>hrRest?Math.round((hr-hrRest)/(hrMax-hrRest)*100):0;
+  setText('d-hrr',isFinite(hrr)?hrr:'--');
+  pushMini(G.charts.mc.hr,hr);
 }
 
 // ── [T2-2026-09-11] Diagnostico de enlace BLE, pintado fuera del callback ──
@@ -12368,7 +12512,7 @@ function clearSession(){
   // vo2max; el firmware lo resetea al iniciar la prueba (main.cpp:663) → replicarlo aquí.
   if(typeof _VD!=='undefined'&&_VD.data)_VD.data.vo2max=0;
   G.fullHist={labels:[],tms:[],metNew:[],vo2:[],vco2:[],hr:[],rer:[],ee:[],ve:[],fat:[],cho:[],veVCO2:[],veVO2:[],o2pulse:[],peto2:[],petco2:[],ee1:[],ee2:[],ee3:[],hrv:[],rr:[],zone:[],phase:[]};
-  G.snaHist={labels:[],sns:[],pns:[],hrv:[]};
+  G.snaHist={labels:[],sns:[],pns:[],hrv:[],fc:[]};
   G.chartView='live';
   G.bxbDisplay={lastGood:null,held:false,reason:''};
   // F-5: mismo olvido que en _doStartTest() — limpiar la sesión dejaba vivos el hold
@@ -14558,7 +14702,9 @@ async function updateReport(){
   }
   // Mejora I: HRV en informe
   if(G.hrvMetrics&&G.hrvMetrics.rmssd>0){
-    setText('rep-hrv-rmssd',G.hrvMetrics.rmssd.toFixed(1)+' ms');
+    // [RR-ART-2026-10-22] el informe declara la calidad de la ventana que respalda el valor
+    const _artTxt=G.hrvMetrics.artPct!=null?' (artefactos '+G.hrvMetrics.artPct.toFixed(1)+' %)':'';
+    setText('rep-hrv-rmssd',G.hrvMetrics.rmssd.toFixed(1)+' ms'+_artTxt);
     setText('rep-hrv-sdnn',G.hrvMetrics.sdnn.toFixed(1)+' ms');
     setText('rep-hrv-pnn50',G.hrvMetrics.pnn50.toFixed(1)+'%');
     const snsP=G.snsIndex||50,pnsP=G.pnsIndex||50;
@@ -17262,6 +17408,8 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);">HRV RMSSD Actual</div>
           <div style="font-family:var(--display);font-size:4rem;font-weight:900;color:var(--accent);" id="hrv-big">--</div>
           <div style="color:var(--muted);font-family:var(--mono);font-size:0.85rem;">ms</div>
+          <!-- [RR-ART-2026-10-22] calidad de la ventana RR (renderHrvQuality) -->
+          <div id="hrv-quality" style="margin-top:4px;font-family:var(--mono);font-size:0.72rem;color:var(--muted);">Calidad RR: sin datos</div>
         </div>
         <!-- SNA Balance Bar -->
         <div style="margin-bottom:14px;padding:10px 16px;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius);">
@@ -17303,7 +17451,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           <div style="background:var(--card2);border-radius:var(--radius);padding:12px;">
             <div style="position:relative;height:260px;"><canvas id="sna-temporal-chart"></canvas></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px;">
             <div style="background:rgba(255,140,0,0.08);border-left:3px solid #FF8C00;border-radius:var(--radius);padding:10px;text-align:center;">
               <div style="font-size:0.7rem;color:#FF8C00;text-transform:uppercase;">⚡ Simpático (Acelerador)</div>
               <div style="font-size:2rem;font-weight:800;color:#FF8C00;" id="dash-sns-index">--</div>
@@ -17318,6 +17466,12 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
               <div style="font-size:0.7rem;color:#00C8FF;text-transform:uppercase;">HRV (RMSSD)</div>
               <div style="font-size:2rem;font-weight:800;color:#00C8FF;" id="dash-hrv-value">--</div>
               <div style="font-size:0.65rem;color:var(--muted);">ms</div>
+            </div>
+            <!-- [SNA-FC-2026-10-22] -->
+            <div style="background:rgba(229,72,77,0.08);border-left:3px solid #E5484D;border-radius:var(--radius);padding:10px;text-align:center;">
+              <div style="font-size:0.7rem;color:#E5484D;text-transform:uppercase;">❤️ FC</div>
+              <div style="font-size:2rem;font-weight:800;color:#E5484D;" id="dash-sna-fc">--</div>
+              <div style="font-size:0.65rem;color:var(--muted);">lpm · banda, o media RR</div>
             </div>
           </div>
         </div>
