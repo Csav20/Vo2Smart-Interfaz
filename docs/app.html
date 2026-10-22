@@ -90,7 +90,7 @@
 .tns-sr{flex:2;background:var(--swiss-red);}
 .tns-sw{flex:1;background:rgba(255,255,255,0.85);}
 
-/* ── TOPBAR brand: mini flags + Sensirion ── */
+/* ── TOPBAR brand: mini flags + el fabricante ── */
 .topbar-nation{display:flex;align-items:center;gap:7px;margin-left:14px;padding-left:14px;border-left:1px solid var(--border2);}
 .tb-flag-cl{width:26px;height:18px;border-radius:2px;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.4);}
 .tb-flag-cl-top{display:flex;height:9px;}
@@ -101,14 +101,14 @@
 .tb-flag-ch-cross{position:relative;width:10px;height:10px;}
 .tb-flag-ch-cross::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:3px;height:10px;background:#fff;}
 .tb-flag-ch-cross::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:10px;height:3px;background:#fff;}
-.sensirion-badge{
+.tech-badge{
   display:flex;align-items:center;gap:4px;
   padding:2px 8px;border-radius:5px;
   background:rgba(0,166,81,0.14);border:1px solid rgba(0,166,81,0.35);
   font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:.4px;
   color:#1a7f37;white-space:nowrap;
 }
-.sensirion-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;flex-shrink:0;}
+.tech-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;flex-shrink:0;}
 
 /* ── NAV sidebar: active en azul chileno ── */
 .nav-item.active{background:rgba(0,56,168,0.09)!important;color:var(--chile-blue)!important;border-left:2px solid var(--chile-blue)!important;font-weight:700!important;}
@@ -126,12 +126,12 @@
   display:flex;flex-direction:column;align-items:center;gap:5px;
 }
 .sidebar-nation-flags{display:flex;align-items:center;gap:5px;}
-.sb-sensirion{
+.sb-tech{
   font-family:var(--mono);font-size:0.58rem;font-weight:700;
   color:#1a7f37;letter-spacing:.4px;
   display:flex;align-items:center;gap:3px;
 }
-.sb-sensirion-dot{width:4px;height:4px;border-radius:50%;background:#4ade80;}
+.sb-tech-dot{width:4px;height:4px;border-radius:50%;background:#4ade80;}
 .sidebar-credit{font-size:0.54rem;color:var(--muted);text-align:center;line-height:1.5;}
 
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -214,6 +214,12 @@ body{font-family:var(--body);background:var(--bg);color:var(--text-page);min-hei
 /* Ocultar voltaje en pantallas medianas para ahorrar espacio */
 @media(max-width:1200px){.batt-pill-v{display:none;}}
 @media(max-width:1060px){.batt-pill{display:none;}}
+/* [BATT-UX-2026-10-06] La píldora y la tarjeta Batería abren «Cómo cargar» (en móvil la píldora
+   se oculta: la tarjeta es la entrada). Parpadeo con ≤10 % sin USB. */
+.batt-pill,#d-bat-card{cursor:pointer;}
+.batt-pill.batt-low{animation:battLowBlink 1.2s ease-in-out infinite;}
+@keyframes battLowBlink{50%{opacity:.35;}}
+@media (prefers-reduced-motion:reduce){.batt-pill.batt-low{animation:none;}}
 
 /* ── TFT toggle pill ── */
 .tft-pill{
@@ -1576,7 +1582,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
      abrir un bloque propio (175 → 158 px de topbar sin Web Serial). */
   .topbar-right{display:contents;}
   .topbar-right > :first-child{margin-left:auto;}
-  .brand-badge,.topbar-nation,.sensirion-badge{display:none;}
+  .brand-badge,.topbar-nation,.tech-badge{display:none;}
 }
 
 /* deploy-layer: aplicada por tools/deploy/build_app.py */
@@ -2396,6 +2402,38 @@ textarea.form-input{resize:vertical;min-height:100px;}
 </head>
 <body>
 
+<!-- ══ GUARDA DE ARRANQUE [BOOT-GUARD-2026-10-21] ══
+     El acceso es estético: nunca debe dejar al operador en la portada. doLogin() vive en
+     el bloque de script principal; si ese bloque falla al cargar en un navegador
+     concreto, el botón dejaba de responder SIN aviso (reporte 2026-10-21, no reproducible
+     en perfil limpio con o sin red). Este bloque va ANTES de todo script: registra los
+     errores de carga y, si doLogin no existe o falla, entra igual y los muestra. -->
+<script>
+var __bootErrs=[];
+window.addEventListener('error',function(e){
+  __bootErrs.push((e.message||'error')+(e.lineno?' (línea '+e.lineno+')':''));
+});
+function vo2ShowBootErrors(){
+  if(!__bootErrs.length)return;
+  var b=document.createElement('div');
+  b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:100000;background:#7f1d1d;color:#fff;'
+    +'font:12px/1.4 monospace;padding:8px 12px;max-height:40vh;overflow:auto;white-space:pre-wrap;';
+  b.textContent='Errores al cargar la aplicación (envíe una captura de esta franja):\n'+__bootErrs.join('\n');
+  b.onclick=function(){b.remove();};
+  document.body.appendChild(b);
+}
+function vo2EnterFallback(){
+  ['flag-overlay','splash'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+  var app=document.getElementById('app'); if(app)app.style.display='';
+  try{ if(typeof initApp==='function')initApp(); }catch(e){ __bootErrs.push('initApp: '+e.message); }
+  vo2ShowBootErrors();
+}
+function vo2Enter(){
+  if(typeof doLogin!=='function'){ __bootErrs.push('doLogin no está definido: el bloque principal no cargó'); vo2EnterFallback(); return; }
+  try{ doLogin(); }catch(e){ __bootErrs.push('doLogin: '+e.message); vo2EnterFallback(); }
+}
+</script>
+
 <!-- ══ SPLASH LOGIN ══ -->
 <!-- ══ OVERLAY BANDERAS — secuencia Chile → Suiza → Hecho en Chile ══ -->
 <div id="flag-overlay">
@@ -2417,7 +2455,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
   <div class="flag-stage" id="fs2">
     <div class="flag-ch"><div class="flag-ch-cross"></div></div>
     <div class="flag-caption">TECNOLOGÍA SUIZA</div>
-    <div class="flag-sub">Sensirion AG · Swiss Precision Engineering ·</div>
+    <div class="flag-sub">Swiss Precision Engineering ·</div>
   </div>
   <!-- Etapa 3: Combinada -->
   <div class="flag-stage" id="fs3">
@@ -2455,9 +2493,10 @@ textarea.form-input{resize:vertical;min-height:100px;}
     <div class="splash-brand" style="font-size:2.6rem;"><span style="color:#70d4e9;">Vo₂</span><span style="color:#486060;">SMART</span> <span style="color:var(--text);font-size:1.4rem;">PRO</span></div>
     <div class="splash-subtitle" style="margin-top:8px;">Sistema Avanzado de Análisis Cardiopulmonar · Protocolo PREBIO-VO2SMART-001</div>
     <div style="text-align:center;margin-top:16px;">
-      <span style="font-family:var(--display);font-size:1.4rem;font-weight:900;font-style:italic;">
+      <!-- [HIDE-AM-2026-10-22] Logotipo ACTIONSMART ® oculto por decisión del usuario; quitar display:none para restaurar -->
+      <span class="am-wordmark" style="display:none;"><span style="font-family:var(--display);font-size:1.4rem;font-weight:900;font-style:italic;">
         <span style="color:#5b5b5f;">ACTION</span><span style="color:#d6da13;">SMART</span>
-      </span><span style="color:#5b5b5f;font-size:0.7rem;vertical-align:super;">®</span>
+      </span><span style="color:#5b5b5f;font-size:0.7rem;vertical-align:super;">®</span></span>
       <div style="margin-top:4px;font-size:0.72rem;color:#6e6e73;font-style:italic;">La ciencia aplicada al deporte</div>
       <!-- Mini banderas en splash login -->
       <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -2483,7 +2522,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
       <label data-i18n="login_pass">Contraseña</label>
       <input type="password" id="login-pass" placeholder="••••••••" data-i18n-ph="login_ph_pass" autocomplete="current-password">
     </div>
-    <button class="btn-login" onclick="doLogin()" data-i18n="login_btn">Entrar al Sistema →</button>
+    <button class="btn-login" onclick="vo2Enter()" data-i18n="login_btn">Entrar al Sistema →</button>
     <div style="margin-top:14px;display:flex;justify-content:center;gap:6px;">
       <button class="toggle-btn active" onclick="setLang('ES');document.querySelectorAll('#splash .toggle-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">ES</button>
       <button class="toggle-btn" onclick="setLang('EN');document.querySelectorAll('#splash .toggle-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">EN</button>
@@ -2498,17 +2537,25 @@ textarea.form-input{resize:vertical;min-height:100px;}
 (function(){
   var stages=['fs1','fs2','fs3'];
   var times=[3000,3000,2000];
-  var cur=0;
+  var cur=0, done=false;
+  // [BOOT-GUARD-2026-10-21] Un clic salta la animación: durante sus 8 s tapaba el login
+  // (z-index 10000) y los clics sobre «Entrar» se perdían sin aviso.
+  function finish(){
+    if(done)return; done=true;
+    var ov=document.getElementById('flag-overlay');
+    ov.classList.add('fade-out');
+    setTimeout(function(){ov.style.display='none';},1000);
+  }
+  document.getElementById('flag-overlay').addEventListener('click',finish);
   function next(){
+    if(done)return;
     document.getElementById(stages[cur]).classList.remove('active');
     cur++;
     if(cur<stages.length){
       document.getElementById(stages[cur]).classList.add('active');
       setTimeout(next,times[cur]);
     } else {
-      var ov=document.getElementById('flag-overlay');
-      ov.classList.add('fade-out');
-      setTimeout(function(){ov.style.display='none';},1000);
+      finish();
     }
   }
   setTimeout(next,times[0]);
@@ -3316,6 +3363,37 @@ const I18N = {
     mm_ve: "VE",
     mm_rr: "Fr. Resp.",
     mm_battery: "Batería",
+    batt_usb: "USB",
+    batt_usb_tip: "Alimentado por USB. La batería SOLO carga con el interruptor en ON. Con USB conectado el nivel real de la batería no es medible.",
+    batt_autonomy: "Autonomía estimada",
+    batt_tft_on: "pantalla encendida",
+    batt_tft_off: "pantalla apagada",
+    batt_help_hint: "clic: cómo cargar",
+    batt_last: "Última lectura",
+    batt_ago_fmt: "hace {t}",
+    batt_no_data: "Sin lectura de batería: conecte el equipo.",
+    batt_low_toast: "Batería baja: {p} % (~{t}). Conecte USB con el interruptor en ON.",
+    batt_usb_start: "USB conectado: manténgalo durante la prueba, con el interruptor en ON.",
+    batt_gate_title: "Batería insuficiente para la prueba",
+    batt_gate_text: "Batería {p} % · autonomía estimada ~{t}, menor que {m} min. La prueba podría cortarse.",
+    batt_gate_cancel: "Cancelar — cargar primero",
+    batt_gate_continue: "Continuar igual",
+    batt_close: "Cerrar",
+    batt_help_title: "Cómo cargar el equipo",
+    batt_h1: "Interruptor en ON. Con el interruptor en OFF la pantalla enciende por USB, pero la batería NO carga.",
+    batt_h2: "Use un cargador de pared USB (1 A o más). El puerto de un PC entrega menos corriente.",
+    batt_h3: "Cargue sin sesión en curso y, si puede, con la pantalla apagada: el equipo encendido consume ~350 mA del cargador.",
+    batt_h4: "Con el equipo encendido la carga completa puede tardar hasta ~15 h: cárguelo de un día para otro.",
+    batt_chg_est: "Carga completa en ≈ {lo} – {hi} (estimado desde {p} %, {src}).",
+    batt_chg_from_live: "lectura antes de enchufar",
+    batt_chg_from_saved: "última lectura guardada",
+    batt_chg_unknown: "Sin % de partida registrado (sin USB): el tiempo de carga no se puede estimar.",
+    batt_chg_done: "Probablemente completa según la estimación (no medido).",
+    batt_light_btn: "Carga ligera: apagar pantalla",
+    batt_light_noconn: "Conecte el equipo por BLE o el receptor para apagar la pantalla.",
+    batt_light_already: "La pantalla ya está apagada. Los sensores siguen consumiendo hasta actualizar el firmware.",
+    batt_light_sent: "Pantalla apagada para cargar. Los sensores siguen encendidos: el modo carga completo requiere actualizar el firmware.",
+    batt_h5: "Al terminar, desconecte el USB y reinicie el equipo SIN flujo en el elemento (cero del sensor de presión).",
     mm_caltotal: "kcal Total",
     mm_time: "Tiempo",
     zone_title: "🎯 Zona de Entrenamiento Actual",
@@ -3531,6 +3609,37 @@ const I18N = {
     mm_ve: "VE",
     mm_rr: "Resp. Rate",
     mm_battery: "Battery",
+    batt_usb: "USB",
+    batt_usb_tip: "Powered by USB. The battery ONLY charges with the switch ON. With USB connected the real battery level cannot be measured.",
+    batt_autonomy: "Estimated runtime",
+    batt_tft_on: "screen on",
+    batt_tft_off: "screen off",
+    batt_help_hint: "click: how to charge",
+    batt_last: "Last reading",
+    batt_ago_fmt: "{t} ago",
+    batt_no_data: "No battery reading: connect the device.",
+    batt_low_toast: "Low battery: {p} % (~{t}). Connect USB with the switch ON.",
+    batt_usb_start: "USB connected: keep it connected during the test, with the switch ON.",
+    batt_gate_title: "Battery too low for the test",
+    batt_gate_text: "Battery {p} % · estimated runtime ~{t}, below {m} min. The test may be cut short.",
+    batt_gate_cancel: "Cancel — charge first",
+    batt_gate_continue: "Continue anyway",
+    batt_close: "Close",
+    batt_help_title: "How to charge the device",
+    batt_h1: "Switch ON. With the switch OFF the screen powers up from USB, but the battery does NOT charge.",
+    batt_h2: "Use a USB wall charger (1 A or more). A PC port supplies less current.",
+    batt_h3: "Charge with no session running and, if possible, with the screen off: the running device draws ~350 mA from the charger.",
+    batt_h4: "With the device on, a full charge can take up to ~15 h: charge it overnight.",
+    batt_chg_est: "Full charge in ≈ {lo} – {hi} (estimated from {p} %, {src}).",
+    batt_chg_from_live: "reading before plugging in",
+    batt_chg_from_saved: "last saved reading",
+    batt_chg_unknown: "No starting % recorded (without USB): charge time cannot be estimated.",
+    batt_chg_done: "Probably full according to the estimate (not measured).",
+    batt_light_btn: "Light charge: screen off",
+    batt_light_noconn: "Connect the device via BLE or the receiver to turn the screen off.",
+    batt_light_already: "The screen is already off. The sensors keep drawing power until the firmware is updated.",
+    batt_light_sent: "Screen off for charging. The sensors stay on: the full charge mode requires a firmware update.",
+    batt_h5: "When done, unplug USB and restart the device with NO flow through the element (pressure sensor zero).",
     mm_caltotal: "kcal Total",
     mm_time: "Time",
     zone_title: "🎯 Current Training Zone",
@@ -3746,6 +3855,37 @@ const I18N = {
     mm_ve: "VE",
     mm_rr: "Fr. Resp.",
     mm_battery: "Bateria",
+    batt_usb: "USB",
+    batt_usb_tip: "Alimentado por USB. A bateria SÓ carrega com o interruptor em ON. Com USB conectado o nível real da bateria não é mensurável.",
+    batt_autonomy: "Autonomia estimada",
+    batt_tft_on: "tela ligada",
+    batt_tft_off: "tela desligada",
+    batt_help_hint: "clique: como carregar",
+    batt_last: "Última leitura",
+    batt_ago_fmt: "há {t}",
+    batt_no_data: "Sem leitura de bateria: conecte o equipamento.",
+    batt_low_toast: "Bateria baixa: {p} % (~{t}). Conecte o USB com o interruptor em ON.",
+    batt_usb_start: "USB conectado: mantenha-o durante o teste, com o interruptor em ON.",
+    batt_gate_title: "Bateria insuficiente para o teste",
+    batt_gate_text: "Bateria {p} % · autonomia estimada ~{t}, menor que {m} min. O teste pode ser interrompido.",
+    batt_gate_cancel: "Cancelar — carregar antes",
+    batt_gate_continue: "Continuar mesmo assim",
+    batt_close: "Fechar",
+    batt_help_title: "Como carregar o equipamento",
+    batt_h1: "Interruptor em ON. Com o interruptor em OFF a tela liga pelo USB, mas a bateria NÃO carrega.",
+    batt_h2: "Use um carregador de parede USB (1 A ou mais). A porta de um PC fornece menos corrente.",
+    batt_h3: "Carregue sem sessão em andamento e, se possível, com a tela desligada: o equipamento ligado consome ~350 mA do carregador.",
+    batt_h4: "Com o equipamento ligado a carga completa pode levar até ~15 h: carregue durante a noite.",
+    batt_chg_est: "Carga completa em ≈ {lo} – {hi} (estimado a partir de {p} %, {src}).",
+    batt_chg_from_live: "leitura antes de conectar",
+    batt_chg_from_saved: "última leitura salva",
+    batt_chg_unknown: "Sem % inicial registrado (sem USB): o tempo de carga não pode ser estimado.",
+    batt_chg_done: "Provavelmente completa segundo a estimativa (não medido).",
+    batt_light_btn: "Carga leve: desligar tela",
+    batt_light_noconn: "Conecte o equipamento por BLE ou pelo receptor para desligar a tela.",
+    batt_light_already: "A tela já está desligada. Os sensores continuam consumindo até atualizar o firmware.",
+    batt_light_sent: "Tela desligada para carregar. Os sensores continuam ligados: o modo carga completo requer atualizar o firmware.",
+    batt_h5: "Ao terminar, desconecte o USB e reinicie o equipamento SEM fluxo no elemento (zero do sensor de pressão).",
     mm_caltotal: "kcal Total",
     mm_time: "Tempo",
     zone_title: "🎯 Zona de Treino Atual",
@@ -3926,7 +4066,7 @@ let G = {
   lastZoneTs:null,
   currentData:{},
   // Perfil negociado por GET_CONFIG. Permite convivir con firmware legado
-  // (vol + CO₂ en %) y SBN41/SDP810 (vt + CO₂ como fracción) sin tocar FW.
+  // (vol + CO₂ en %) y sensor de gas/sensor de flujo (vt + CO₂ como fracción) sin tocar FW.
   fwCompat:{family:'unknown',co2Unit:'fraction',supportsCalCO2:true,hasBxb:false},
   _fwPacketSeq:0,
   correctionSensor:1.0,
@@ -4014,13 +4154,13 @@ function applyFirmwareCompatibility(cfg={}){
     console.info('[FW compat] xiao-direct: gas y ΔP, sin metabolismo BxB');
     return;
   }
-  const isSbn41 = cfg.bxb_soft!==undefined || (cfg.board==='TTGO T-Display' && cfg.sensor_flow===undefined);
+  const isGasFlowFw = cfg.bxb_soft!==undefined || (cfg.board==='TTGO T-Display' && cfg.sensor_flow===undefined);
   G.fwCompat={
-    family:isSbn41?'sbn41-sdp810':'legacy-flow',
-    co2Unit:isSbn41?'fraction':'percent',
-    supportsCalCO2:isSbn41,
-    hasBxb:isSbn41,
-    correctionMax:isSbn41?5:2
+    family:isGasFlowFw?'gas-flow':'legacy-flow',
+    co2Unit:isGasFlowFw?'fraction':'percent',
+    supportsCalCO2:isGasFlowFw,
+    hasBxb:isGasFlowFw,
+    correctionMax:isGasFlowFw?5:2
   };
   const correctionInput=document.getElementById('correction-input');
   if(correctionInput){
@@ -4033,7 +4173,7 @@ function applyFirmwareCompatibility(cfg={}){
 
 function normalizeFirmwarePacket(packet){
   const d=Object.assign({},packet);
-  // Detectar antes de GET_CONFIG: el stream legado usa "vol"; SBN41 usa "vt".
+  // Detectar antes de GET_CONFIG: el stream legado usa "vol"; sensor de gas usa "vt".
   const legacy=G.fwCompat.family==='legacy-flow'||(d.vol!==undefined&&d.vt===undefined);
   if(legacy){
     G.fwCompat.family='legacy-flow'; G.fwCompat.co2Unit='percent';
@@ -4088,7 +4228,7 @@ function calcAbsoluteCorrectionK(measuredVtL, referenceVolML, baseK){
 
 // ── Hardware profiles — auto-detección por board en GET_CONFIG ──
 const HW_PROFILES = {
-  'TTGO T-Display':                {FR_DIVISOR:1.0, VE_FALLBACK:1.0, frEnabled:false, label:'VO2Smart v3 (SDP810)'},
+  'TTGO T-Display':                {FR_DIVISOR:1.0, VE_FALLBACK:1.0, frEnabled:false, label:'VO2Smart v3 (sensor de flujo)'},
   'ESP32-C3 LCD':                  {FR_DIVISOR:2.0, VE_FALLBACK:1.145, frEnabled:true,  label:'VO2Smart v4 (Omron)'},
   'Waveshare ESP32-C6-LCD-1.47':   {FR_DIVISOR:2.0, VE_FALLBACK:1.145, frEnabled:true,  label:'VO2Smart v5 (C6)'},
   '_default':                      {FR_DIVISOR:2.0, VE_FALLBACK:1.145, frEnabled:true,  label:'VO2Smart (auto)'}
@@ -4138,7 +4278,7 @@ function applyFlowElement(flowName, flowK, boardTag){
     : 'El firmware usa D2=19mm. Selecciona el D2 real medido con calibre → K se calcula automáticamente.';
 
   const veLbl=document.getElementById('lbl-sdp-ve');
-  if(veLbl) veLbl.textContent = lam ? 'VE  SDP810+LFE' : 'VE  SDP810+Venturi';
+  if(veLbl) veLbl.textContent = lam ? 'VE  sensor de flujo+LFE' : 'VE  sensor de flujo+Venturi';
 
   const rst=document.getElementById('btn-k-reset-lbl');
   if(rst) rst.textContent = lam ? '↩ Reset 1.000' : '↩ Reset 1.06';
@@ -4801,12 +4941,16 @@ window.onProtocolStageCheck=onProtocolStageCheck;
 // LOGIN
 // ═══════════════════════════════════════════════════
 function doLogin(){
-  const u=document.getElementById('login-user').value.trim();
-  const p=document.getElementById('login-pass').value;
-  if(!u||!p){toast(t('toast_login_error'),'error');return;}
+  // [BOOT-GUARD-2026-10-21] Acceso estético: sin credenciales obligatorias. Antes, con los
+  // campos vacíos (la sugerencia «••••••••» parece una contraseña ya cargada) no avanzaba.
   const splash=document.getElementById('splash');
   splash.style.opacity='0';
-  setTimeout(()=>{splash.style.display='none';document.getElementById('app').style.display='';initApp();},800);
+  setTimeout(()=>{
+    splash.style.display='none';
+    document.getElementById('app').style.display='';
+    try{ initApp(); }catch(e){ __bootErrs.push('initApp: '+e.message); }
+    vo2ShowBootErrors();
+  },800);
 }
 document.addEventListener('DOMContentLoaded',()=>{
   loadSavedLang(); // Restaurar idioma guardado antes del login
@@ -4877,6 +5021,7 @@ function goPage(id,btn){
   }
   if(id==='ia'){ try{ updatePredictionPanel(); }catch(e){ console.warn('[goPage] updatePredictionPanel:', e.message); } }
   if(id==='usuario')loadSessionHistory();
+  if(id==='prebio')preRender();
   if(id==='bariatrico') { try{ updateBariatric(); }catch(e){ console.warn('[goPage] updateBariatric:', e.message); } }
   if(id==='graficos'){
     requestAnimationFrame(()=>{
@@ -5004,6 +5149,10 @@ function startTest(){
     toast('Paso 1: calibra O₂ antes de iniciar (o omite)','info');
     return;
   }
+  // [BATT-UX-2026-10-06] H-4: autonomía estimada < 45 min sin USB → aviso con «Continuar igual».
+  // Va ANTES de la compuerta de backlog: al continuar, startTest() se re-ejecuta y el
+  // confirm() del backlog aparece una sola vez.
+  if(G.testState==='idle' && !battPreTestGate()) return;
   // ② START_TEST → firmware offlineLogger.newTestSession() = "descarta backlog
   // no-sincronizado" (OfflineLogger.h:40). El sync automático arranca ~5.6 s tras
   // conectar; iniciar antes borraba datos jamás leídos, sin aviso. Decisión explícita.
@@ -5621,7 +5770,7 @@ function _vtS4(ctx) { // tftScreen4 — VENTURI DIAG (mirrors firmware tftScreen
   const d=_VD.data;
   // Espejo del TFT: el firmware titula la pantalla con FLOW_ELEMENT_NAME.
   _vtPageHdr(ctx,(G.flow.element==='LAMINAR'?'LAMINAR':'VENTURI')+' DIAG',4);
-  // Row 0: dP raw — SDP810 reading
+  // Row 0: dP raw — sensor de flujo reading
   const dpRaw=typeof d.dp==='number'?d.dp:0;
   _vtRow(ctx,0,'dP raw', dpRaw.toFixed(3), 'Pa',
     Math.abs(dpRaw)>0.05?_VTC.SUC:_VTC.GRY);
@@ -5653,7 +5802,7 @@ function _vtS5(ctx) { // tftScreen5 — Live BIG
   _vtBig(ctx,_VTC.ROW_Y+2,'VO2',d.vo2.toFixed(1),'ml/kg/min',_VTC.SUC);
   const sy=_VTC.ROW_Y+52;
   ctx.fillStyle=_VTC.SEP; ctx.fillRect(_VTC.LX,sy,_VTC.W-2*_VTC.LX,1);
-  // FW tftScreen5 usa sbn41_rer si disponible; fallback a rer_computed (rq)
+  // FW tftScreen5 usa gas_rer si disponible; fallback a rer_computed (rq)
   const rerDisp=(d.rer_sbn>0)?d.rer_sbn:d.rq;
   const rerCol =(d.rer_sbn>0)?_VTC.ACC:_VTC.ORG;
   _vtBig(ctx,sy+4,'RER',rerDisp.toFixed(2),'',rerCol);
@@ -5804,7 +5953,7 @@ function vtUpdateFromData(d) {
   if(d.vo2max!==undefined) m.vo2max =+d.vo2max;
   if(d.vco2 !==undefined) m.vco2    =+d.vco2;
   if(d.rq     !==undefined) m.rq      =+d.rq;
-  if(d.rer_sbn!==undefined) m.rer_sbn =+d.rer_sbn;  // RER directo SBN41
+  if(d.rer_sbn!==undefined) m.rer_sbn =+d.rer_sbn;  // RER directo sensor de gas
   if(d.ve     !==undefined) m.ve      =+d.ve;
   if(d.freq !==undefined) m.freq    =+d.freq;
   if(d.vol  !==undefined) m.vol     =+d.vol;
@@ -5818,12 +5967,12 @@ function vtUpdateFromData(d) {
   if(d.humid!==undefined) m.humid   =+d.humid;
   if(d.pres !==undefined) m.pres    =+d.pres;
   if(d.rho  !==undefined) { m.rho=+d.rho; }
-  if(d.dp    !==undefined) m.dp    =+d.dp;    // ΔP SDP810 crudo (Pa)
+  if(d.dp    !==undefined) m.dp    =+d.dp;    // ΔP sensor de flujo crudo (Pa)
   if(d.dp_c  !==undefined) m.dp_c  =+d.dp_c;  // ΔP corregido (Pa)
   if(d.dp_e  !==undefined) m.dp_e  =+d.dp_e;  // |EMA| (Pa)
   if(d.dp_t  !==undefined) m.dp_t  =+d.dp_t;  // threshold (Pa)
   if(d.br    !==undefined) m.br    =+d.br;     // breathCount
-  if(d.co2_on!==undefined) m.co2_on=!!d.co2_on; // SBN41 ready flag (stream)
+  if(d.co2_on!==undefined) m.co2_on=!!d.co2_on; // sensor de gas ready flag (stream)
   if(d.phase !==undefined) m.phase =+d.phase;  // ExercisePhase 0/1/2 del FW
   if(d.calTotal !==undefined) m.calTotal =+d.calTotal;
   if(d.calHour  !==undefined) m.calHour  =+d.calHour;
@@ -6014,13 +6163,13 @@ function _syncCalibrationSessionUI(){
 // y aquí se revoca la marca de calibrado obtenida por readback (el ancla de la FRC
 // vive en el sensor, pero sin evidencia no se declara calibrado en el informe).
 // ── D (2026-08-19) — sello de FRC persistido en el equipo ────────────────────
-// DS SBN41 V0.5 §7.4.4: "The FRC correction values are written to internal memory
+// DS del sensor de gas §7.4.4: "The FRC correction values are written to internal memory
 // and automatically reloaded after power-on; as a result, the change is permanent."
 // Confirmado en placa 11C468: power-cycle sin recalibrar → O₂ 20.95, CO₂ 0.04.
 // Antes, frc_o2/frc_co2 (contadores desde el arranque del FW) se ponían a 0 en cada
 // power-cycle y este handler revocaba la marca de calibrado, obligando a repetir
 // warm-up 180 s + FRC aunque el ancla siguiera viva dentro del sensor.
-// El firmware publica ahora frc_nv:1 + frc_sn (serial del SBN41) desde NVS: es
+// El firmware publica ahora frc_nv:1 + frc_sn (serial del sensor de gas) desde NVS: es
 // evidencia del EQUIPO, no una inferencia de este navegador, así que no se revoca
 // por o2Age===0. El serial es el candado — si se cambia de sensor, frc_nv llega 0.
 // La antigüedad absoluta la aporta el navegador (el ESP32 no tiene RTC): se guarda
@@ -6070,8 +6219,8 @@ function _applyDeviceFrcState(r){
   G._devFrcCo2Resid = safeN(r.frc_co2_resid, 0);
   G._devFrcVerifS   = safeN(r.frc_verif, 0);
   G._devFrcNvForced = safeN(r.frc_nv_forced, 0) === 1;
-  // F: gas_ok = sbn41Ready && !sbn41GasDead (main.cpp:1018). Un sello NVS vive en el
-  // sensor y sobrevive a que el canal se muera: sin esto, un SBN41 caído seguía
+  // F: gas_ok = gasReady && !gasGasDead (main.cpp:1018). Un sello NVS vive en el
+  // sensor y sobrevive a que el canal se muera: sin esto, un sensor de gas caído seguía
   // declarando 'FRC vigente' y el wizard se saltaba con el gas sin dato.
   G._devGasOk = (r.gas_ok !== false);
   if(G._devFrcNv && G._devFrcSn){
@@ -6096,12 +6245,12 @@ function _applyDeviceFrcState(r){
     toast('El dispositivo no registra FRC O₂ (¿reinicio del equipo?) — recalibra','error');
   }
   // [CAL-GW-2026-09-30] Mismo criterio de aceptación que el eco done:1 y que
-  // sek-sbn41-wizard.html: residual |co2 − 0,04| ≤ CALCO2_RESID_MAX. Antes el readback
+  // evk-wizard.html: residual |co2 − 0,04| ≤ CALCO2_RESID_MAX. Antes el readback
   // aceptaba cualquier frc_co2>0, así que la MISMA FRC era rechazada por el wizard y
   // aceptada aquí cuando el done:1 no llegaba — y por el receptor ESP-NOW no llega
   // NUNCA: el firmware entrega el done:1 diferido solo por BLE o serial
   // (main.cpp, cierre de _frcCo2Pending), así que esta era la única ruta del gateway.
-  // frc_co2_resid es el mismo sbn41_co2_pct que viaja en el done:1 (vol%).
+  // frc_co2_resid es el mismo gas_co2_pct que viaja en el done:1 (vol%).
   // Sin el campo (firmware previo) no hay con qué juzgar: se conserva el comportamiento.
   const _residKnown = (r.frc_co2_resid !== undefined && r.frc_co2_resid !== null);
   const _residOk    = !_residKnown ||
@@ -6167,7 +6316,7 @@ function _advanceCalibrationWizard(step){
 // Secuencia: conectar → warm-up (gate por uptime del FW, t_WU) → mascarilla
 // fuera + aire limpio → cmdCalO2() (existente). Minimiza error humano forzando
 // la secuencia. NO auto-ejecuta el comando: requiere confirmación del operador.
-// M-3 (2026-07-27): 90 → 180 s. El SEK-SBN41 Starting Guide §2.3 paso 7 exige
+// M-3 (2026-07-27): 90 → 180 s. El guía del fabricante §2.3 paso 7 exige
 // t_WU = 3 min antes de cualquier FRC; el firmware ya usa FRC_WARMUP_MIN_MS =
 // 180000 (main.cpp:468) y lo publica como t_wu en GET_CONFIG. Con 90 s el wizard
 // disparaba CAL_O2 a mitad de warm-up → ancla O₂ sobre lectura aún derivando
@@ -6175,7 +6324,7 @@ function _advanceCalibrationWizard(step){
 // No es const: si el dispositivo declara otro t_wu, ese valor manda (GET_CONFIG).
 let CALO2_WARMUP_S = 180;             // t_WU mínimo antes de FRC (R-ISO-05)
 // Banda de aceptación del residual de la FRC de CO₂, en vol% sobre la referencia
-// ambiente (0,04). Portado de sek-sbn41-wizard.html:160, que era el único flujo que
+// ambiente (0,04). Portado de evk-wizard.html:160, que era el único flujo que
 // lo validaba. Medido en placa 2026-08-05: una FRC buena dejó el ambiente en −0,04
 // vol% (residual 0,08); un ancla dañada daba +2,0. 0,30 deja 3,7× de margen sobre el
 // residual bueno y 6,7× por debajo del caso malo. Se discrimina el MÓDULO, con signo
@@ -6193,7 +6342,7 @@ function _calO2ElapsedS(){
   if(G._calO2OpenMs)     return (Date.now()-G._calO2OpenMs)/1000;
   return null;
 }
-// La placa reinició. Las anclas FRC del SBN41 son VOLÁTILES: viven en RAM del sensor,
+// La placa reinició. Las anclas FRC del sensor de gas son VOLÁTILES: viven en RAM del sensor,
 // no en NVS del ESP32, así que un reboot las borra y toda calibración de la sesión
 // anterior deja de ser válida (R-ISO-05). Arrastrar el estado "calibrado" a través de
 // un reinicio haría que el informe declarara una FRC que el sensor ya no tiene.
@@ -6224,7 +6373,7 @@ function _onDeviceReboot(){
   openCalO2Wizard();                    // reabre el paso 1 con el reloj del equipo fresco
 }
 // ── E (2026-08-19) — dos caminos según el sello de FRC del equipo ────────────
-// Con frc_nv:1 el ancla ya vive en el SBN41 (DS §7.4.4) y repetir warm-up 180 s +
+// Con frc_nv:1 el ancla ya vive en el sensor de gas (DS §7.4.4) y repetir warm-up 180 s +
 // FRC es ritual, no rigor. El DS pide FRC "before each measurement series in its
 // environment" por deriva del ENTORNO → basta verificar que el sensor sigue leyendo
 // aire ambiente en banda (CAL_VERIFY, 20 s). El flujo completo se conserva intacto
@@ -6242,7 +6391,7 @@ function _calVerifyResult(r){
                                verifiedO2:safeN(r.o2,0)});
     if(!G._calO2Done)  _calO2Complete('device-nvs');
     // [CAL-GW-2026-09-30] CAL_VERIFY juzga el O₂ contra ambiente; el CO₂ sellado se
-    // acepta solo si su residual está en la misma banda que exige el wizard SEK.
+    // acepta solo si su residual está en la misma banda que exige el wizard EVK.
     if(!G._calCO2Done){
       if(Math.abs(safeN(G._devFrcCo2Resid,0.04)-0.04) <= CALCO2_RESID_MAX) _calCO2Complete('device-nvs');
       else toast('CO₂ sellado con residual '+safeN(G._devFrcCo2Resid,0).toFixed(3)+' vol% fuera de banda — recalibra CO₂','error');
@@ -6322,14 +6471,14 @@ function _calO2Tick(){
     btn.disabled=true;
   }
 }
-// M-4: gas_ok:false ⇒ el canal O₂ no entrega dato (sbn41GasDead) → anclar la FRC
+// M-4: gas_ok:false ⇒ el canal O₂ no entrega dato (gasGasDead) → anclar la FRC
 // contra un canal muerto produce una calibración inválida que además se registraría
 // como "verificada en placa". Se bloquea el disparo, manual y automático.
 function _calO2GasBlocked(){
   if(G._devGasOk!==false) return false;
   const lblEl=document.getElementById('calo2-warmup-label');
   const btn=document.getElementById('calo2-run-btn');
-  if(lblEl){lblEl.textContent='✗ Canal O₂ sin dato (gas_ok:false) — revisa el SBN41';lblEl.style.color='#c62828';}
+  if(lblEl){lblEl.textContent='✗ Canal O₂ sin dato (gas_ok:false) — revisa el sensor de gas';lblEl.style.color='#c62828';}
   if(btn){btn.disabled=true;btn.textContent='CAL_O2 no disponible';}
   return true;
 }
@@ -6386,7 +6535,7 @@ function _o2FlatState(){
 // sesiones consecutivas del 2026-08-05 arrancaron con frc_o2>0 y frc_co2:0 porque nadie
 // lo pulsó. El CO₂ sin anclar arrastra ~+2 vol% de offset (ambiente leyendo 1,9–2,2 %
 // en vez de 0,04) que entra completo en ΔCO₂ → RER 1,10–1,25 en reposo.
-// Orden SEK Starting Guide §2.3: O₂ primero, CO₂ después — lo garantiza la cadena.
+// Orden guía del fabricante §2.3: O₂ primero, CO₂ después — lo garantiza la cadena.
 // [CO2AMB-2026-09-08] Techo de CO₂ para admitir una FRC. Aire natural = 0.04 vol%
 // (DS v0.5). El espirado ronda 3.5–5 %, así que 0.5 % deja ~10× de margen por debajo
 // del aliento y ~4× por encima del ruido ambiente medido en placa (0.01–0.12 %).
@@ -6437,7 +6586,7 @@ function _calCO2AutoAnchor(){
 // [CAL-GW-2026-09-30] Incluye el receptor ESP-NOW. Antes solo BLE/serial: con el
 // gateway como única conexión, la línea que abre el wizard (gwDataActive) lo abría,
 // pero aquí se declaraba "sin conexión" y CAL_O2/CAL_CO2 no salían nunca — el
-// operador veía un asistente que fallaba siempre mientras el wizard SEK (BLE) sí
+// operador veía un asistente que fallaba siempre mientras el wizard EVK (BLE) sí
 // calibraba. sendBLECommand() ya enruta por gwSendCmd(); faltaba esta compuerta.
 function _calO2LinkUp(){
   return !!(cmdRouteAvailable() || G.serialConnected);
@@ -6520,14 +6669,14 @@ function _calO2Fail(reason){
                          '<strong>Motivo:</strong> el dispositivo no confirmó la FRC.';
     let extra = '';
     if(G._devGasOk===false)
-      extra = '<br>El equipo reporta <code>gas_ok:false</code> — canal O₂ sin dato. Revisa conexión del SBN41 antes de insistir.';
+      extra = '<br>El equipo reporta <code>gas_ok:false</code> — canal O₂ sin dato. Revisa conexión del sensor de gas antes de insistir.';
     else if(G._calO2FailCount>=2)
-      extra = '<br>2+ intentos sin confirmar. Verifica en Diagnóstico que el SBN41 esté <em>ready</em>; si persiste, power-cycle del equipo y repite el warm-up t_WU ('+CALO2_WARMUP_S+' s) antes de reintentar.';
+      extra = '<br>2+ intentos sin confirmar. Verifica en Diagnóstico que el sensor de gas esté <em>ready</em>; si persiste, power-cycle del equipo y repite el warm-up t_WU ('+CALO2_WARMUP_S+' s) antes de reintentar.';
     failEl.innerHTML = why + extra +
       '<br><span style="color:var(--muted2);">La calibración NO se marcó como hecha: el informe seguirá declarando FRC O₂ ausente.</span>' +
       // M-1r: el operador no tenía forma de saber si el Paso 2 llegó a salir. La cadena
       // O₂→CO₂ solo se dispara desde _calO2Complete, así que un fallo aquí la detiene.
-      '<br><span style="color:var(--muted2);">Paso 2 · FRC CO₂ <strong>NO se envió</strong> — la cadena O₂→CO₂ se detiene aquí (SEK Guide §2.3: el orden es obligatorio).</span>';
+      '<br><span style="color:var(--muted2);">Paso 2 · FRC CO₂ <strong>NO se envió</strong> — la cadena O₂→CO₂ se detiene aquí (guía del fabricante §2.3: el orden es obligatorio).</span>';
     failEl.style.display='block';
   }
   _calO2RecoveryArm();   // M-1r: revela la salida solo si el fallo es el gate circular
@@ -6727,7 +6876,7 @@ function _calO2UsePrevious(){
   _advanceCalibrationWizard(2);
 }
 function cmdCalCO2(){
-  // M-1: la FRC de CO₂ exige la de O₂ anclada primero (DS §6.1 + SEK Starting Guide §8).
+  // M-1: la FRC de CO₂ exige la de O₂ anclada primero (DS §6.1 + guía del fabricante §8).
   // El FW ya rechaza el comando fuera de orden, pero el rechazo es silencioso: sin este
   // gate el botón suelto de la sección Calibración no da ninguna señal al operador.
   // G._calO2Done incluye el readback frc_o2 de GET_CONFIG (_applyDeviceFrcState), así que
@@ -7395,7 +7544,7 @@ const BXB_UI_QC = {
   //   respiratorio (apnea > 12 s o primera del registro), luego no hay metabolismo.
   DP_SAT:128,
   NO_FR:256,
-  // [ZONE-2026-09-09] Tres zonas del SDP810 (main.cpp, mismo commit — R-CHG-01).
+  // [ZONE-2026-09-09] Tres zonas del sensor de flujo (main.cpp, mismo commit — R-CHG-01).
   // El techo real del sensor NO son los ±125 Pa de la hoja de datos: el ADC se
   // clava en 32767/scale, medido en placa en ±136.53 Pa con el -125Pa (scale 240).
   // DP_DEGRADED — el ciclo pisó [118, riel): HAY señal, pero fuera de la zona
@@ -7406,7 +7555,7 @@ const BXB_UI_QC = {
   DP_DEGRADED:512,
   DP_RAIL:1024,
   // [RECON-2026-09-09] El ciclo tuvo ≥1 muestra en el riel cuyo ΔP se pudo ESTIMAR
-  // desde el canal de presión del SBN41 (r²=0.9855 en la banda de relevo 80–118 Pa,
+  // desde el canal de presión del sensor de gas (r²=0.9855 en la banda de relevo 80–118 Pa,
   // verificado hasta 1.19× el riel). En esta iteración es DIAGNÓSTICO: no altera
   // vt/ve/veb, solo dice cuánto se salió el ciclo. Un ciclo con DP_RAIL y sin
   // DP_RECON se pasó MÁS ALLÁ de lo verificado → pérdida no acotada.
@@ -8025,7 +8174,7 @@ function getRERData(rer){
 //   Se agregó parámetro rqFirmware a la función para respetar el RQ Haldane del firmware
 //   Si rqFirmware disponible y válido → usarlo como PRIMARIO
 //   Si no → fallback a métodos secundarios (flow, gas, default)
-//   Fracciones gaseosas NUNCA sobrescriben firmware RQ; solo validan y detectan degradación SCD30
+//   Fracciones gaseosas NUNCA sobrescriben firmware RQ; solo validan y detectan degradación sensor de CO₂
 function computeRER(vo2,vco2,feo2,feco2,ve, rqFirmware){
   const FiO2_REF=20.93, FiCO2_REF=0.04;
   // rer_flow: ratio directo de flujos STPD del firmware (Haldane incluido)
@@ -8055,11 +8204,11 @@ function computeRER(vo2,vco2,feo2,feco2,ve, rqFirmware){
     
     // Cross-check contra fracciones gaseosas (validación, sin override)
     if(rer_gas >= 0.60 && rer_gas <= 1.40 && Math.abs(rer_gas - rqFirmware) > 0.15){
-      // Divergencia >15% entre firmware RQ y gas fractions → señal de sensor SCD30 degradado
+      // Divergencia >15% entre firmware RQ y gas fractions → señal de sensor sensor de CO₂ degradado
       method = 'firmware_primary_gas_alert';
       if(!G._logThrottles._rerFwGasDiverge||Date.now()-G._logThrottles._rerFwGasDiverge>10000){
         console.warn('⚠️ RER firmware vs gas divergencia >15%: RQ_FW=',rqFirmware.toFixed(3),
-          'vs RER_GAS=',rer_gas.toFixed(3),'→ Posible falla SCD30 o posición incorrecta.');
+          'vs RER_GAS=',rer_gas.toFixed(3),'→ Posible falla sensor de CO₂ o posición incorrecta.');
         G._logThrottles._rerFwGasDiverge=Date.now();
       }
     }
@@ -8076,7 +8225,7 @@ function computeRER(vo2,vco2,feo2,feco2,ve, rqFirmware){
         method = 'gas_fallback_flow_invalid';
         if(!G._logThrottles._rerFlowInvalid||Date.now()-G._logThrottles._rerFlowInvalid>10000){
           console.warn('🚨 RER flow imposible:',rer_flow.toFixed(3),'con VO₂=',vo2.toFixed(2),
-            '→ invalidado. Usando rer_gas=',rer_gas.toFixed(3),'. Revisar SCD30 ABC y calibración.');
+            '→ invalidado. Usando rer_gas=',rer_gas.toFixed(3),'. Revisar sensor de CO₂ ABC y calibración.');
           G._logThrottles._rerFlowInvalid=Date.now();
         }
       } else {
@@ -8152,7 +8301,7 @@ function computeRER(vo2,vco2,feo2,feco2,ve, rqFirmware){
 // ── SSOT: computeRERConfidence() — Score de calidad del dato RER ──
 // Scoring actualizado para nueva jerarquía de métodos (R-RER-PRIORITY-01 + R-RER-SSOT-FW-01, 2026-04-25):
 //   firmware_primary         = RQ del firmware Haldane-corregido, sin conflicto gas → máxima confianza (NUEVO)
-//   firmware_primary_gas_alert = RQ firmware OK, pero gas diverge >15% → señal de degradación SCD30 (NUEVO)
+//   firmware_primary_gas_alert = RQ firmware OK, pero gas diverge >15% → señal de degradación sensor de CO₂ (NUEVO)
 //   flow_primary             = flujos firmware Haldane, sin divergencia gas → máxima confianza
 //   flow_primary_gas_diverge = flujos Haldane pero gas difiere >10% → penalización leve
 //   gas_fallback             = fracciones gaseosas sin flujos → confianza media
@@ -8355,6 +8504,9 @@ function resetStabilityIndicator(){
 }
 
 function processData(d){
+  // [PRE-2026-10-21] Antes de cualquier escalado: la evaluación prebiológica necesita
+  // VE/VT en ATPS, y más abajo APPLY_AMBIENT los multiplica por BTPS en el propio `d`.
+  try{ preIngestFrame(d); }catch(e){ console.warn('[PRE] ingest:', e.message); }
   // Normalize BLE field name: firmware ≤v4.0.3 solo enviaba "rq"; v4.0.4+ envía ambos.
   // Mantener aliasing como red de seguridad para firmware legacy.
   if(d.rq!==undefined&&d.rer===undefined)d.rer=d.rq;
@@ -8448,7 +8600,7 @@ function processData(d){
   G.rawBuffer=G.rawBuffer.filter(r=>r._ts>=cutoff60);
 
   // ── Watchdog sensor congelado (hallazgo FC-freeze) ─────────────────────────
-  // Causa: dual BLE (HR + VO2) → NimBLE preempta loop() → timeouts I2C SBN41.
+  // Causa: dual BLE (HR + VO2) → NimBLE preempta loop() → timeouts I2C sensor de gas.
   // Síntoma: sd.o2 (FeO₂) inmóvil >8s mientras llegan paquetes BLE.
   // Umbral 0.05%: variación mínima esperada entre dos muestras consecutivas en reposo.
   {
@@ -8469,8 +8621,8 @@ function processData(d){
   }
 
   // ── M-8: campo "s" — bits de FALLA reportados por el firmware ───────────────
-  // main.cpp:3160 · bit0 canal O₂ muerto (sbn41GasDead) · bit3 SDP810 stale ·
-  // bit4 ≥1 trama SDP con CRC malo. El campo solo viaja cuando hay algo que
+  // main.cpp:3160 · bit0 canal O₂ muerto (gasGasDead) · bit3 sensor de flujo stale ·
+  // bit4 ≥1 trama ΔP con CRC malo. El campo solo viaja cuando hay algo que
   // reportar (0 B en operación sana), por eso ausencia ⇒ sin falla.
   // Se lee de `d` (crudo), NO de `sd`: el suavizado promedia campos numéricos y
   // convertiría un bitfield en un valor sin sentido.
@@ -8491,13 +8643,13 @@ function processData(d){
     if(fb){
       if(_fltRaw && !isDemo){
         const parts=[];
-        if(gasFault)  parts.push('canal O₂ del SBN41 sin dato');
-        if(_sdpStale) parts.push('SDP810 sin lecturas frescas');
-        if(_sdpCrc)   parts.push('tramas SDP810 con CRC inválido');
+        if(gasFault)  parts.push('canal O₂ del sensor de gas sin dato');
+        if(_sdpStale) parts.push('sensor de flujo sin lecturas frescas');
+        if(_sdpCrc)   parts.push('tramas sensor de flujo con CRC inválido');
         setText('gas-fault-text','⚠ Fallo de sensor: '+parts.join(' · '));
         setText('gas-fault-hint', gasFault
-          ? 'VO₂/VCO₂ suspendidos — sin canal O₂ no hay ΔO₂ Haldane. Revisa conexión del SBN41 y repite CAL_O2 tras el warm-up.'
-          : 'Flujo degradado — revisa el cableado I²C del SDP810 (Wire1) antes de dar por válida la sesión.');
+          ? 'VO₂/VCO₂ suspendidos — sin canal O₂ no hay ΔO₂ Haldane. Revisa conexión del sensor de gas y repite CAL_O2 tras el warm-up.'
+          : 'Flujo degradado — revisa el cableado I²C del sensor de flujo (Wire1) antes de dar por válida la sesión.');
         fb.style.display='block';
       }else{
         fb.style.display='none';
@@ -8621,7 +8773,7 @@ function processData(d){
   const o2=safeN(sd.o2||sd.feo2);
   const co2=Math.max(0,safeN(sd.co2||sd.feco2));
   // ── R-ISO-06 — fracción ESPIRADA vs lectura instantánea ───────────────────────
-  // o2/co2 son la lectura instantánea del SBN41: durante la inhalación barren el aire
+  // o2/co2 son la lectura instantánea del sensor de gas: durante la inhalación barren el aire
   // ambiente, así que su media temporal está sesgada hacia 20.9 (AP-GAS-01: FeO₂_EMA
   // 20.6 contra FeO₂_BxB 15.9 en la misma trama). Solo valen para el detector de sensor
   // congelado y el espejo del TFT — jamás para ΔO₂ ni para nada rotulado "Fe".
@@ -8640,7 +8792,16 @@ function processData(d){
   // _batInvalid: readVoltage() corre cada 5s; primeros paquetes BLE envían batV=0.0 (FW boot)
   const _batInvalid = batV < 3.0;
   // _batSpike: transitorio IP5306 al desconectar USB (alineado con threshold firmware: 0.40V)
-  const _batSpike   = !_batInvalid && G._prevBatV > 3.0 && batV < G._prevBatV - 0.40;
+  // [BATT-UX-2026-10-06] H-2: el rechazo era PERMANENTE. Al rechazar no se actualiza
+  // _prevBatV, así que al desconectar USB (4.20) con la celda < ~3.80 V toda lectura caía
+  // > 0.40 V bajo la referencia y se descartaba para siempre: 100 % mientras se descargaba.
+  // Ahora una caída que persiste BATT_SPIKE_ACCEPT_N tramas se acepta como real; 1–2 tramas
+  // siguen rechazadas. El FW tiene el mismo latch (main.cpp:5321): hasta corregirlo
+  // (Etapa 3) batteryV sigue llegando en 4.20 y este cambio no se ve.
+  const _batDrop    = !_batInvalid && G._prevBatV > 3.0 && batV < G._prevBatV - 0.40;
+  G._batDropN       = _batDrop ? (G._batDropN || 0) + 1 : 0;
+  const _batSpike   = _batDrop && G._batDropN < BATT_SPIKE_ACCEPT_N;
+  if (_batDrop && !_batSpike) G._batDropN = 0;   // caída aceptada: un spike posterior vuelve a contar desde 0
   const batVf = (_batInvalid || _batSpike) ? G._prevBatV : batV;
   const batf  = batVf >= 3.0
                 ? (batVf >= 4.10 ? 100 : batVf <= 3.20 ? 0 : Math.round((batVf - 3.20) / 0.90 * 100))
@@ -8654,7 +8815,7 @@ function processData(d){
   // cambian etiquetas: la selección de fuente NO se tocó. Nota: el firmware ya no envía
   // `rer` (2026-09-07) y normalizeFirmwarePacket() lo rellena con rer_sbn, así que
   // rerFwH == rerSBN y el "cross-check Haldane" es hoy degenerado — pendiente de corregir.
-  // rer_sbn: hardware SBN41, 0 cuando sensor calentando o gas diluido.
+  // rer_sbn: hardware sensor de gas, 0 cuando sensor calentando o gas diluido.
   // sd.rer: rer_computed firmware, Haldane VCO₂/VO₂, constrained [0.65,1.30] — NO calculado en HTML.
   const rerSBN      = safeN(sd.rer_sbn, 0);
   const rerFwH      = safeN(sd.rer,     0);   // firmware Haldane (VCO₂/VO₂)
@@ -8666,13 +8827,13 @@ function processData(d){
   // VO₂=4/VCO₂=2.6 → VCO₂/VO₂=0.65). Confiar en rer_sbn SOLO si concuerda con
   // el Haldane firmware (definición VCO₂/VO₂) dentro de RER_XCHK. En reposo cae
   // a Haldane → coherente con VO₂/VCO₂ mostrados; en ejercicio (respiración
-  // profunda) ambos concuerdan → usa hardware SBN41. rer_sbn solo (sin Haldane)
+  // profunda) ambos concuerdan → usa hardware sensor de gas. rer_sbn solo (sin Haldane)
   // se conserva como último recurso con confianza reducida.
   // ── A1 (2026-07-24 · hallazgo difusor-Venturi): Haldane firmware inválido si
   // pegado al riel del clamp [MIN_RER,MAX_RER]=[0.65,1.30] (constrain main.cpp:2388).
   // Run1 (difusor puesto): rerFwH=1.300 sostenido = clamp por VE inflada → NO es
   // medición. Perturbación de flujo del difusor infla VCO₂ Haldane. Rechazar el
-  // riel evita que la basura clampeada gane sobre el hardware SBN41 sano.
+  // riel evita que la basura clampeada gane sobre el hardware sensor de gas sano.
   const rerFwHRailed = rerFwH <= 0.66 || rerFwH >= 1.29;
   // ── A2: detección de HOLD. rer_computed se retiene entre updates de 5s y cuando
   // vo2<0.5 (main.cpp:2388) → 'haldane_fw' se congela 30–77s (Run2: 1.042 fijo 77s)
@@ -8696,8 +8857,8 @@ function processData(d){
   const _rerXchkLim  = G._rerTrust ? RER_XCHK_OFF : RER_XCHK_ON;
   const rerSBNTrust  = rerSBNValid && (!rerFwHUsable || _rerDiff <= _rerXchkLim);
   G._rerTrust = rerSBNTrust;
-  // ── M-1 (2026-07-27 · SEK-SBN41 Starting Guide §4.3) ──────────────────────
-  // Sensirion es explícita: el Live-RER del SBN41 "is not a substitute for the
+  // ── M-1 (2026-07-27 · guía del fabricante §4.3) ──────────────────────
+  // El fabricante es explícito: el Live-RER del sensor de gas "is not a substitute for the
   // full RER calculation when flow data is available and VO₂ and VCO₂ are being
   // evaluated"; recomienda RER breath-integrated desde VO₂/VCO₂ (Eq.29). Eso es
   // exactamente rer_bxb. Coincide con la evidencia propia ya registrada aquí:
@@ -8717,19 +8878,19 @@ function processData(d){
   const rerDisplay  = rer;
   const rerFlag     = !(rerValid || rerBxBValid);
   // Discrepancia BxB vs hardware: señal de alineación gas/flujo o de FRC dudosa.
-  // No cambia el valor mostrado, solo advierte (SEK Guide §4.2 alignment).
+  // No cambia el valor mostrado, solo advierte (guía del fabricante §4.2 alignment).
   const rerXchkWarn = rerBxBValid && rerSBNValid && Math.abs(rerBxB - rerSBN) > 0.10;
   const rerConf     = rerBxBValid  ? Math.round(rerBxBConf*100)
                     : rerSBNTrust  ? 95
                     : rerFwHUsable ? 70
                     : rerSBNValid  ? 55 : 0;
   const rerMethod   = rerBxBValid  ? 'bxb_clinical'
-                    : rerSBNTrust  ? 'sbn41_xcheck'
+                    : rerSBNTrust  ? 'gas_xcheck'
                     : rerFwHUsable ? 'haldane_fw'
-                    : rerSBNValid  ? 'sbn41_only' : 'none';
+                    : rerSBNValid  ? 'gas_only' : 'none';
   const rerFlow     = 0;
   const rerGas      = 0;
-  // Firmware legacy puede declarar CO₂ no válido; el SBN41 actual no expone
+  // Firmware legacy puede declarar CO₂ no válido; el sensor de gas actual no expone
   // ese campo, por lo que se mantiene retrocompatibilidad (ausente = válido).
   const gasValid=(sd.gasValid==null)?true:(sd.gasValid===true||safeN(sd.gasValid)===1);
   const steady=computeSteadyState(G.smoothWindowSec||30);
@@ -8864,7 +9025,7 @@ function processData(d){
   // sola muestra). Antes cualquier valor mostrado fijaba el pico:
   //   · 14-09 16:41:27 — VO₂ 5.6 de la PRIMERA respiración (veb 0, LOW_N, cv 0) → meta.peaks.vo2 5.6;
   //     el pico real con veb>0 y sin retención fue 5.0 (16:47:56).
-  //   · 14-09 16:41:20 — RER 1.316 del SBN41 con VO₂ 0 (gas de la mascarilla, sin respiración)
+  //   · 14-09 16:41:20 — RER 1.316 del sensor de gas con VO₂ 0 (gas de la mascarilla, sin respiración)
   //     → meta.peaks.rer 1.316, y esas filas también entraban en rerAvg.
   //   · 14-09 16:27:24 — VO₂ 7.2 arrastrado de la sesión anterior (vo2_bxb 0) → pico 7.2 vs 5.3.
   // Clase B: meta.peaks.vo2/rer y rerAvg pueden BAJAR; FC y VE sin cambio. Datos crudos intactos.
@@ -8933,19 +9094,19 @@ function processData(d){
   const _rerSt=_feHoldApply('rer',(gasValid&&rerValid)?rerDisplay:null,Date.now());
   _setFeTile('d-rer',_rerSt,3);
   const steadyMark=steady.isSteady?' SS':(steady.slopePctMin!=null?(steady.slopePctMin>0?' ↗':' ↘'):' ~');
-  // M-1: el subtítulo nombra el método REAL (antes solo distinguía SBN41/Haldane
+  // M-1: el subtítulo nombra el método REAL (antes solo distinguía sensor de gas/Haldane
   // y mentía cuando la fuente era BxB). rerXchkWarn avisa de discrepancia >0.10
   // entre el RER breath-integrated y el Live-RER del hardware.
-  const _rerSrcLbl={bxb_clinical:'BxB',sbn41_xcheck:'SBN41 respaldo',haldane_fw:'Haldane',sbn41_only:'SBN41 respaldo*',none:'--'}[rerMethod]||'--';
-  // M-1: la etiqueta de la tarjeta sigue al método activo. Fija en "Live-RER SBN41"
-  // era falsa desde que rer_bxb pasó a 1.ª prioridad (SEK Guide §4.3: el Live-RER
+  const _rerSrcLbl={bxb_clinical:'BxB',gas_xcheck:'sensor de gas respaldo',haldane_fw:'Haldane',gas_only:'sensor de gas respaldo*',none:'--'}[rerMethod]||'--';
+  // M-1: la etiqueta de la tarjeta sigue al método activo. Fija en "Live-RER sensor de gas"
+  // era falsa desde que rer_bxb pasó a 1.ª prioridad (guía del fabricante §4.3: el Live-RER
   // del hardware no sustituye al RER breath-integrated cuando hay dato de flujo).
   setText('d-rer-label',{
     bxb_clinical:'RER breath-by-breath',
     // [ROT-RER-2026-09-14] "✓Haldane" era falso: rerFwH es alias de rer_sbn (ver arriba).
-    sbn41_xcheck:'RER SBN41 (respaldo)',
+    gas_xcheck:'RER sensor de gas (respaldo)',
     haldane_fw:'RER Haldane (FW)',
-    sbn41_only:'RER SBN41 (respaldo)',
+    gas_only:'RER sensor de gas (respaldo)',
     none:'RER'
   }[rerMethod]||'RER');
   setText('d-rer-sub',gasValid&&(rerValid||rerBxBValid)
@@ -8998,7 +9159,7 @@ function processData(d){
   if(corrBadge)corrBadge.style.display=CL.enabled?'inline-block':'none';
   _setFeTile('d-vol',_feHoldApply('vol',vol>0?vol:null,Date.now()),3);   // [DISP-HOLD] antes 0.000 sin dato
   // Los tiles rotulados "Fe" muestran la fracción ESPIRADA conforme (R-ISO-06), no la
-  // lectura instantánea: esa vive en el panel SBN41 de abajo, que sí es un crudo.
+  // lectura instantánea: esa vive en el panel sensor de gas de abajo, que sí es un crudo.
   // D4: hold de presentación — valor atenuado + edad en tooltip mientras no haya
   // ventana conforme nueva; '--' sólo pasados feHoldMaxMs(). Los datos que van a
   // series, currentData y CSV siguen siendo _feo2/_feco2 crudos.
@@ -9008,14 +9169,14 @@ function processData(d){
   _setFeTile('d-feo2', _feo2St, 2);
   _setFeTile('d-feco2',_feco2St,2);
 
-  // ── Panel SBN41 en tiempo real (lectura INSTANTÁNEA, crudo del sensor) ──
+  // ── Panel sensor de gas en tiempo real (lectura INSTANTÁNEA, crudo del sensor) ──
   setText('d-sbn-o2',  o2.toFixed(2));
   setText('d-sbn-co2', (co2*100).toFixed(2));
   // [ROT-RER-2026-09-14] Este valor NO es el crudo del sensor: es el mismo RER de la
   // tarjeta principal (rer_bxb; rer_sbn solo como respaldo). Se rotula su fuente real.
   setText('d-sbn-rer', gasValid&&rerValid ? rerDisplay.toFixed(3) : '--');
   setText('d-sbn-rer-label', rerMethod==='bxb_clinical' ? 'RER BxB' : 'RER (respaldo)');
-  setText('d-sbn-rer-sub', {bxb_clinical:'breath-by-breath · VCO₂/VO₂',sbn41_xcheck:'SBN41 fin espiración · respaldo',haldane_fw:'Haldane FW · respaldo',sbn41_only:'SBN41 fin espiración · respaldo',none:'sin dato'}[rerMethod]||'--');
+  setText('d-sbn-rer-sub', {bxb_clinical:'breath-by-breath · VCO₂/VO₂',gas_xcheck:'sensor de gas fin espiración · respaldo',haldane_fw:'Haldane FW · respaldo',gas_only:'sensor de gas fin espiración · respaldo',none:'sin dato'}[rerMethod]||'--');
   const sbnPresHpa = pres > 50000 ? (pres/100).toFixed(1) : '--';
   setText('d-sbn-pres', sbnPresHpa);
   setText('d-sdp-temp', temp > -40 ? temp.toFixed(1) : '--');
@@ -9032,7 +9193,7 @@ function processData(d){
   // decía "20.95 − FeO₂". Sin ventana espiratoria conforme se publica '--', nunca 0
   // ni un ΔO₂ sintético del crudo (AP-GAS-01).
   setText('d-sbn-do2',  (_feo2St.v!=null&&_feo2St.v>0) ? (20.95 - _feo2St.v).toFixed(2) : '--');
-  // Dot de estado: verde si SBN41 enviando datos válidos
+  // Dot de estado: verde si sensor de gas enviando datos válidos
   const sbnDot = document.getElementById('sbn-live-dot');
   if(sbnDot) sbnDot.style.background = (o2 > 5 && o2 < 25) ? '#00c853' : '#ef5350';
   const sbnTs = document.getElementById('sbn-last-ts');
@@ -9052,7 +9213,12 @@ function processData(d){
   // antiguo omita `batteryV`); fallback a % derivado de voltaje. Voltaje solo
   // etiqueta el sub-label V (se oculta si <3.0 → firmware sin batteryV).
   const _batPct = (bat > 0) ? bat : (_batReady ? batf : null);
-  setText('d-bat', _batPct != null ? _batPct.toFixed(0) : '--');
+  // [BATT-UX-2026-10-06] H-1: con USB el % no es el nivel de la celda (ADC saturado) → 'USB'.
+  // [BATT-UX-1B-2026-10-06] battIngest() antes de pintar: fija el punto de partida de la carga.
+  battIngest(d.device_id, _batPct, batVf, isDemo);
+  const _batUsb = batVf >= BATT_USB_V;
+  setText('d-bat', _batUsb ? t('batt_usb','USB') : (_batPct != null ? _batPct.toFixed(0) : '--'));
+  setText('d-bat-unit', _batUsb ? battChargeShort() : '%');
   updateTopbarBattery(_batPct != null ? _batPct : 0, batVf);
   setText('d-cal-total',G.totalCalories.toFixed(1));
   setText('d-elapsed',elapsed);
@@ -9632,16 +9798,256 @@ function updateTopbarBattery(pct, volts) {
   if (pct <= 0 && !_vOk) {
     if(pctEl) pctEl.textContent = '--';
     if(vEl)   vEl.textContent   = '--V';
+    // [BATT-UX-2026-10-06] H-6: en el arranque (batV 0.0) mostrar la última lectura guardada.
+    if(pill)  pill.title = _battLastText() || t('mm_battery','Batería');
     return;
   }
-  const charging = _vOk && volts >= 4.18;  // IP5306 constrain max=4.20V; ≥4.18 indica cargando
-  const color = charging ? '#60e8a0' : pct > 50 ? '#22c55e' : pct > 20 ? '#ffbe0b' : '#ff4d6d';
-  fill.setAttribute('width', Math.max(0, Math.min(13, (pct / 100) * 13)).toFixed(1));
+  // [BATT-UX-2026-10-06] H-1: antes «⚡ cargando» con ≥4.18 V. Falso: con USB el ADC satura en
+  // el tope 4.20 de readVoltage() esté o no cargando la celda (interruptor OFF = no carga).
+  const usb = _vOk && volts >= BATT_USB_V;
+  const color = usb ? '#60e8a0' : pct > 50 ? '#22c55e' : pct > 20 ? '#ffbe0b' : '#ff4d6d';
+  fill.setAttribute('width', usb ? '13' : Math.max(0, Math.min(13, (pct / 100) * 13)).toFixed(1));
   fill.setAttribute('fill', color);
-  pctEl.textContent = charging ? '⚡ cargando' : pct.toFixed(0) + '%';
+  fill.setAttribute('fill-opacity', usb ? '0.35' : '1');   // nivel no medible: contorno lleno tenue
+  pctEl.textContent = usb ? '🔌 ' + t('batt_usb','USB') : pct.toFixed(0) + '%';
   vEl.textContent   = _vOk ? volts.toFixed(1) + 'V' : '--V';
   pill.style.color  = color;
   pill.style.borderColor = color;
+  pill.title = usb ? t('batt_usb_tip','Alimentado por USB') + ' ' + battChargeText()
+                   : t('batt_autonomy','Autonomía estimada') + ': ~' + _battFmtMin(battAutonomyMin(pct))
+                     + ' · ' + t('batt_help_hint','clic: cómo cargar');
+  pill.classList.toggle('batt-low', !usb && pct > 0 && pct <= 10);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// [BATT-UX-2026-10-06] Batería — Etapa 1, solo HTML
+// docs/BATERIA_CARGA_PROPUESTA_2026-10-06.md §5. Medido 2026-10-06 (COM9, FDC620): con USB,
+// batteryV = 4.20 en 90/90 tramas = tope de constrain() en readVoltage(). Con USB el nivel real
+// NO es medible, y ni el FW ni el HTML distinguen «cargando» de «interruptor OFF» (la placa
+// enciende por USB pero la LiPo queda aislada). Nada aquí cambia el contrato BLE ni envía
+// comandos: usa solo `battery` y `batteryV`.
+// ═══════════════════════════════════════════════════════════════════════════
+const BATT_USB_V            = 4.18;  // ≥ → saturación por USB (o celda recién desconectada del cargador)
+const BATT_USABLE_MAH       = 1700;  // 2000 mAh × 0.85 — DURACION_BATERIA_2026-05-25 §3
+const BATT_I_TFT_ON_MA      = 349;   // operación completa — idem §4 escenario 1
+const BATT_I_TFT_OFF_MA     = 274;   // TFT apagado — escenario 2
+const BATT_MIN_AUTONOMY_MIN = 45;    // bajo esto, aviso antes de START sin USB
+const BATT_SPIKE_ACCEPT_N   = 3;     // tramas consecutivas de caída >0.40 V que se aceptan (H-2)
+const BATT_LOW_LEVELS       = [20, 10];
+const BATT_FRESH_MS         = 60000; // lectura más vieja que esto no cuenta como «viva»
+const BATT_LS_KEY           = 'vo2smart_last_batt';
+// [BATT-UX-1B-2026-10-06] Cuenta regresiva de carga — ESTIMACIÓN, no medición: con USB el nivel
+// de la celda no es observable (el ADC lee la rama del cargador; la fuente done.land reporta
+// > 4.60 V con USB y el FW lo recorta a 4.20). Parte del último % SIN USB y de la corriente del
+// cargador. Supuestos hasta medir (Etapa 2), docs/BATERIA_CARGA_PROPUESTA_2026-10-06.md §8:
+const BATT_NOMINAL_MAH      = 2000;  // LiPo instalada
+const BATT_CHG_MA           = 500;   // TP4054 de la T-Display (LilyGO / done.land: «500mA max»)
+const BATT_CHG_EFF          = 0.90;  // eficiencia de carga — DURACION_BATERIA §5
+const BATT_CV_TAIL_MIN      = 30;    // cola de tensión constante (4.20 V) tras la fase CC
+const BATT_SOC0_WINDOW_MS   = 90000; // % de partida = MÍNIMO sin USB en esta ventana previa
+// Rango: «rápido» si el consumo del equipo sale de VBUS (los 500 mA van a la celda); «lento» si
+// sale de la rama de batería (500 − consumo). Cuál de las dos topologías tiene la placa es la
+// medición nº 1 de la Etapa 2; hasta entonces se muestran ambos extremos.
+const _batt = { pct:null, v:null, usb:false, ts:0, dev:'', lowFired:{}, lastSave:0,
+                hist:[],      // lecturas sin USB {ts,pct} de los últimos BATT_SOC0_WINDOW_MS
+                chg:null };   // {t0, pct0, src:'live'|'saved'} mientras hay USB
+
+// Autonomía lineal sobre el % del FW (sobreestima en la zona media, DURACION_BATERIA §6).
+function battAutonomyMin(pct){
+  if(!(pct > 0)) return 0;
+  const iMa = (typeof _tftOn !== 'undefined' && _tftOn === false) ? BATT_I_TFT_OFF_MA : BATT_I_TFT_ON_MA;
+  return pct / 100 * BATT_USABLE_MAH / iMa * 60;
+}
+function _battFmtMin(m){
+  m = Math.max(0, Math.round(m));
+  const h = Math.floor(m / 60);
+  return h > 0 ? h + ' h ' + String(m % 60).padStart(2,'0') + ' min' : m + ' min';
+}
+function _battFresh(){ return _batt.ts > 0 && (Date.now() - _batt.ts) < BATT_FRESH_MS; }
+
+// H-6: última lectura por equipo (11C468 y FDC620 no se mezclan). localStorage puede fallar.
+function _battLoadAll(){
+  try{ const o = JSON.parse(localStorage.getItem(BATT_LS_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; }
+  catch(_e){ return {}; }
+}
+function _battSaveLast(){
+  const now = Date.now();
+  if(!_batt.dev || now - _batt.lastSave < 30000) return;
+  _batt.lastSave = now;
+  try{
+    const all = _battLoadAll();
+    const prev = all[_batt.dev] || {};
+    // bpct/bts: última lectura SIN USB (punto de partida de la cuenta regresiva aunque el panel
+    // se abra con el equipo ya enchufado). Con USB se conserva la anterior.
+    const b0 = _battSoc0();
+    all[_batt.dev] = { pct:_batt.pct, v:_batt.v, usb:_batt.usb, ts:now,
+                       bpct: _batt.usb ? prev.bpct : (b0 != null ? b0 : prev.bpct),
+                       bts:  _batt.usb ? prev.bts  : (b0 != null ? now : prev.bts) };
+    localStorage.setItem(BATT_LS_KEY, JSON.stringify(all));
+  }catch(_e){}
+}
+// % de partida: el MÍNIMO sin USB de la ventana previa, no la última lectura. Al enchufar, la
+// EMA del FW (α 0.15, cada 5 s) sube hacia 4.20 V durante ~20 s y esas tramas aún no cruzan
+// BATT_USB_V. Evidencia: sesión offline E7C8D909, 70 → 76 → 81 → 86 → 89 → 100 % en 20 s.
+function _battSoc0(){
+  const now = Date.now();
+  const h = _batt.hist.filter(e => now - e.ts <= BATT_SOC0_WINDOW_MS && e.pct > 0);
+  return h.length ? Math.min.apply(null, h.map(e => e.pct)) : null;
+}
+function _battLastText(){
+  if(!_batt.dev) return '';
+  const r = _battLoadAll()[_batt.dev];
+  if(!r || !r.ts) return '';
+  const lvl = r.usb ? t('batt_usb','USB') : (r.pct != null ? Number(r.pct).toFixed(0) + ' %' : '--');
+  return t('batt_last','Última lectura') + ' ' + _batt.dev + ': ' + lvl + ' · '
+       + t('batt_ago_fmt','hace {t}').replace('{t}', _battFmtMin((Date.now() - r.ts) / 60000));
+}
+
+// Llamada desde processData() con el voltaje ya filtrado. Demo/simulación no guarda ni alerta.
+function battIngest(dev, pct, volts, isDemo){
+  if(isDemo) return;
+  if(dev) _batt.dev = String(dev);
+  if(!(volts >= 3.0)) return;              // arranque: batV 0.0 (AP-BATT-03)
+  const now = Date.now(), usb = volts >= BATT_USB_V;
+  // [BATT-UX-1B-2026-10-06] Cuenta regresiva: fija el punto de partida al detectar USB.
+  if(!usb){
+    _batt.chg = null;
+    if(pct > 0) _batt.hist.push({ ts:now, pct:pct });
+    _batt.hist = _batt.hist.filter(e => now - e.ts <= BATT_SOC0_WINDOW_MS);
+  } else if(!_batt.chg){
+    const live = _battSoc0();
+    if(live != null) _batt.chg = { t0:now, pct0:live, src:'live' };
+    else {
+      const r = _battLoadAll()[_batt.dev];
+      // Guardada: sirve si es anterior a esta conexión. La carga ocurrida mientras el panel
+      // no miraba se desconoce → el rango queda corto por el lado conservador (más tiempo).
+      _batt.chg = (r && r.bpct > 0 && r.bts) ? { t0:now, pct0:r.bpct, src:'saved', bts:r.bts }
+                                             : { t0:now, pct0:null, src:null };
+    }
+    _batt.hist = [];
+  }
+  _batt.v = volts; _batt.usb = usb; _batt.pct = pct; _batt.ts = now;
+  _battSaveLast();
+  _battCheckLow();
+}
+
+// Minutos restantes {lo, hi} o null. lo = consumo desde VBUS · hi = consumo desde la batería.
+function battChargeEstimate(){
+  const c = _batt.chg;
+  if(!_batt.usb || !c || !(c.pct0 > 0)) return null;
+  const remMah = Math.max(0, 100 - c.pct0) / 100 * BATT_NOMINAL_MAH;
+  const load   = (typeof _tftOn !== 'undefined' && _tftOn === false) ? BATT_I_TFT_OFF_MA : BATT_I_TFT_ON_MA;
+  const netSlow = Math.max(50, BATT_CHG_MA - load);
+  const el = (Date.now() - c.t0) / 60000;
+  const lo = remMah / (BATT_CHG_MA * BATT_CHG_EFF) * 60 + BATT_CV_TAIL_MIN - el;
+  const hi = remMah / (netSlow     * BATT_CHG_EFF) * 60 + BATT_CV_TAIL_MIN - el;
+  return { lo:Math.max(0, lo), hi:Math.max(0, hi), pct0:c.pct0, src:c.src, elapsed:el };
+}
+function _battFmtShort(m){                // compacto para la tarjeta (68 px de alto)
+  return m < 60 ? Math.round(m) + 'm' : (Math.round(m / 6) / 10).toFixed(1).replace(/\.0$/,'') + 'h';
+}
+function battChargeShort(){
+  const e = battChargeEstimate();
+  if(!e) return '';
+  if(e.hi <= 0) return '✓?';
+  return '≈' + (e.lo <= 0 ? '0' : _battFmtShort(e.lo)) + '–' + _battFmtShort(e.hi);
+}
+function battChargeText(){
+  if(!_batt.usb) return '';
+  const e = battChargeEstimate();
+  if(!e) return t('batt_chg_unknown','Sin % de partida registrado (sin USB): el tiempo de carga no se puede estimar.');
+  if(e.hi <= 0) return t('batt_chg_done','Probablemente completa según la estimación (no medido).');
+  const from = e.src === 'saved' ? t('batt_chg_from_saved','última lectura guardada') : t('batt_chg_from_live','lectura antes de enchufar');
+  return t('batt_chg_est','Carga completa en ≈ {lo} – {hi} (estimado desde {p} %, {src}).')
+    .replace('{lo}', _battFmtMin(e.lo)).replace('{hi}', _battFmtMin(e.hi))
+    .replace('{p}', e.pct0.toFixed(0)).replace('{src}', from);
+}
+
+// [BATT-UX-1B-2026-10-06] «Carga ligera»: lo único que el FW actual permite bajar desde el panel es
+// la pantalla (TFT_OFF, ~75 mA). sensor de gas, sensor de flujo, BLE y ESP-NOW siguen activos: el modo carga
+// completo (deep sleep) es la Etapa 4 y requiere firmware.
+function battLightCharge(){
+  if(typeof cmdRouteAvailable === 'function' && !cmdRouteAvailable()){
+    toast(t('batt_light_noconn','Conecte el equipo por BLE o el receptor para apagar la pantalla.'),'error'); return;
+  }
+  if(typeof _tftOn !== 'undefined' && _tftOn === false){
+    toast(t('batt_light_already','La pantalla ya está apagada. Los sensores siguen consumiendo hasta actualizar el firmware.'),'info'); return;
+  }
+  sendBLECommand('TFT_OFF');
+  // Nota fija en el panel, no toast: la respuesta del FW a TFT_OFF ya dispara su propio toast.
+  const n = document.getElementById('batt-light-note');
+  if(n){ n.textContent = t('batt_light_sent','Pantalla apagada para cargar. Los sensores siguen encendidos: el modo carga completo requiere actualizar el firmware.'); n.style.display = ''; }
+}
+
+// H-5: un aviso por umbral; se rearma con +5 % de histéresis o al conectar USB.
+// Toast diferido (AP-21): processData puede correr en la cadena del handler BLE.
+function _battCheckLow(){
+  if(_batt.usb || !(_batt.pct > 0)){ if(_batt.usb) _batt.lowFired = {}; return; }
+  let hit = null;
+  BATT_LOW_LEVELS.forEach(lv => {
+    if(_batt.pct >= lv + 5) _batt.lowFired[lv] = false;
+    else if(_batt.pct <= lv && !_batt.lowFired[lv]){ _batt.lowFired[lv] = true; hit = lv; }
+  });
+  if(hit == null) return;
+  const msg = t('batt_low_toast','Batería baja: {p} % (~{t}). Conecte USB con el interruptor en ON.')
+    .replace('{p}', _batt.pct.toFixed(0)).replace('{t}', _battFmtMin(battAutonomyMin(_batt.pct)));
+  requestAnimationFrame(() => toast(msg, hit <= 10 ? 'error' : 'warning'));
+}
+
+function _battStatusText(){
+  if(_battFresh()){
+    if(_batt.usb) return t('batt_usb_tip','Alimentado por USB') + ' ' + battChargeText();
+    return t('batt_autonomy','Autonomía estimada') + ': ~' + _battFmtMin(battAutonomyMin(_batt.pct))
+         + ' (' + (_batt.pct != null ? _batt.pct.toFixed(0) : '--') + ' % · ' + _batt.v.toFixed(2) + ' V · '
+         + ((typeof _tftOn !== 'undefined' && _tftOn === false) ? t('batt_tft_off','pantalla apagada') : t('batt_tft_on','pantalla encendida')) + ')';
+  }
+  return _battLastText() || t('batt_no_data','Sin lectura de batería: conecte el equipo.');
+}
+
+// H-3 «Cómo cargar» (gate=false) · H-4 aviso de autonomía antes de iniciar (gate=true).
+function openBattOverlay(gate){
+  const ov = document.getElementById('batt-overlay');
+  if(!ov) return;
+  const gb = document.getElementById('batt-gate-box');
+  const bc = document.getElementById('batt-btn-continue');
+  const bx = document.getElementById('batt-btn-close');
+  if(gb) gb.style.display = gate ? '' : 'none';
+  if(bc) bc.style.display = gate ? '' : 'none';
+  const bl = document.getElementById('batt-btn-light');      // «Carga ligera» no aplica al aviso de inicio
+  if(bl) bl.style.display = gate ? 'none' : '';
+  const ln = document.getElementById('batt-light-note');
+  if(ln) ln.style.display = 'none';
+  if(bx) bx.textContent = gate ? t('batt_gate_cancel','Cancelar — cargar primero') : t('batt_close','Cerrar');
+  if(gate){
+    const gt = document.getElementById('batt-gate-text');
+    if(gt) gt.textContent = t('batt_gate_text','Batería {p} % · autonomía estimada ~{t}, menor que {m} min. La prueba podría cortarse.')
+      .replace('{p}', _batt.pct != null ? _batt.pct.toFixed(0) : '--')
+      .replace('{t}', _battFmtMin(battAutonomyMin(_batt.pct)))
+      .replace('{m}', BATT_MIN_AUTONOMY_MIN);
+  }
+  const st = document.getElementById('batt-status-text');
+  if(st) st.textContent = _battStatusText();
+  ov.style.display = 'flex';
+}
+function closeBattOverlay(){
+  const ov = document.getElementById('batt-overlay');
+  if(ov) ov.style.display = 'none';
+}
+
+// H-4: compuerta de startTest(). Sin lectura viva (demo, FW sin batteryV) no bloquea.
+function battPreTestGate(){
+  if(G._battGateAck){ G._battGateAck = false; return true; }
+  if(!_battFresh()) return true;
+  if(_batt.usb){ toast(t('batt_usb_start','USB conectado: manténgalo durante la prueba, con el interruptor en ON.'),'info'); return true; }
+  if(battAutonomyMin(_batt.pct) >= BATT_MIN_AUTONOMY_MIN) return true;
+  openBattOverlay(true);
+  return false;
+}
+function battGateContinue(){
+  closeBattOverlay();
+  console.warn('[BATT] prueba iniciada con autonomía estimada < ' + BATT_MIN_AUTONOMY_MIN + ' min — confirmado por el operador');
+  G._battGateAck = true;
+  startTest();
 }
 
 let _tftOn = true;
@@ -9849,6 +10255,7 @@ function handleRemoteCommandRaw(raw){
   _lastApiPayload=raw;
   try{
     const r=JSON.parse(raw);
+    storObserve(r);   // [STOR-2026-10-19] observa sin consumir: el despacho sigue igual
     if(_cmdWaiter&&r.cmd===_cmdWaiter.cmd){ _cmdWaiter.resolve(r); return; }
     if(r.device&&(G.serialConnected||G.bleCh||G.bleApiCh)){
       setDiagDeviceName(r.device);
@@ -9870,8 +10277,13 @@ function handleRemoteCommandRaw(raw){
       // Única fuente del elemento de flujo (ver nota en la rama GET_CONFIG).
       requestAnimationFrame(()=>applyFlowElement(r.flow,r.flow_k,r.board_tag));
     }
+    if(r.cmd==='DIAG'&&r.dp_fs!==undefined){
+      // [PRE-2026-10-21] Fondo de escala del sensor de ΔP (125 / 500 Pa) para la vista prebiológica.
+      preSetDevice({dpFs:safeN(r.dp_fs,0),board:r.board_tag});
+    }
     if(r.cmd==='GET_CONFIG'){
       console.log('📋 Device config:',r);
+      preSetDevice({k:safeN(r.correction,0),fw:r.version,frc:preFrcFromConfig(r)});   // [PRE-2026-10-21] trazabilidad del informe
       applyFirmwareCompatibility(r);
       if(r.weight){
         G.fwWeightKg=safeN(r.weight,0)||null;   // R-VO2-FLOOR-01/W1
@@ -9912,7 +10324,7 @@ function handleRemoteCommandRaw(raw){
       //   t_wu    = warm-up mínimo exigido por el FW (s) → manda sobre la constante local
       //   frc_o2  = s transcurridos desde la FRC de O₂  (0 = nunca ejecutada)
       //   frc_co2 = s transcurridos desde la FRC de CO₂ (0 = nunca ejecutada)
-      //   gas_ok  = canal O₂ entregando dato (sbn41Ready && !sbn41GasDead)
+      //   gas_ok  = canal O₂ entregando dato (gasReady && !gasGasDead)
       // Con esto el wizard confirma por dispositivo en vez de cerrar por reloj.
       if(r.t_wu!==undefined && +r.t_wu>0) CALO2_WARMUP_S = +r.t_wu;
       if(r.gas_ok!==undefined) G._devGasOk = (r.gas_ok===true || r.gas_ok==='true');
@@ -9939,7 +10351,7 @@ function handleRemoteCommandRaw(raw){
           ' · lag O₂: '+(safeN(r.lag_o2,0)?safeN(r.lag_o2,0)+'ms':'sin medir')+
           ' · gas_ok: '+(r.gas_ok?'sí':'NO')+
           ' · t_WU: '+safeN(r.t_wu,0)+'s · uptime: '+safeN(r.uptime,0)+'s'+
-          ' · CRC SDP: '+safeN(r.sdp_crc_err,0)+
+          ' · CRC ΔP: '+safeN(r.sdp_crc_err,0)+
           ' · K: '+safeN(r.correction,0).toFixed(3)+' · peso: '+safeN(r.weight,0)+'kg');
       });
       vtUpdateFromConfig(r);
@@ -10007,7 +10419,7 @@ function handleRemoteCommandRaw(raw){
         requestAnimationFrame(()=>_calO2Complete('device'));
       }
       else {
-        // El FW responde ERROR con causa ("SBN41 not ready" | "SBN41 FRC err N").
+        // El FW responde ERROR con causa ("sensor de gas not ready" | "sensor de gas FRC err N").
         // Se propaga al modal: es el dato que decide si reintentar o revisar el sensor.
         const _m = r.msg || 'CAL_O2 rechazada por el dispositivo';
         toast(_m,'error');
@@ -10022,7 +10434,7 @@ function handleRemoteCommandRaw(raw){
         G._calO2DriftMax = safeN(r.max, 21.3);
         // El FW adjunta la evidencia numérica de cada gate (o2_range | wu_left | o2) y
         // hasta 2026-08-12 el modal la descartaba: 'aire no estable' con o2_range null
-        // (buffer de planitud con <20 muestras, xiao_sek_wizard.cpp:201) y con o2_range
+        // (buffer de planitud con <20 muestras, xiao_evk_wizard.cpp:201) y con o2_range
         // 1.5 vol% (aliento real) se leían idénticos en pantalla, y el arreglo es el
         // opuesto — esperar a que llene el buffer vs ventilar la sala.
         const _rng = safeN(r.o2_range, NaN);
@@ -10046,7 +10458,7 @@ function handleRemoteCommandRaw(raw){
         // notify FFE3; si esa notify se pierde (congestión GATT con stream 1Hz), un
         // fallback completa igual para no dejar el wizard colgado.
         G._calCO2ResponseSeen=true;
-        if(r.warn==='o2_first') toast('⚠ CAL_CO2 sin CAL_O2 previa — orden SEK Guide §2.3 violado','warning');
+        if(r.warn==='o2_first') toast('⚠ CAL_CO2 sin CAL_O2 previa — orden guía del fabricante §2.3 violado','warning');
         toast('FRC CO₂ en curso — esperar 3–5 s…','info');
         if(_calCO2AckTimer) clearTimeout(_calCO2AckTimer);
         // M-4: PENDING solo prueba que la FRC ARRANCÓ. Si la 2ª notify (done:1) se
@@ -10055,12 +10467,12 @@ function handleRemoteCommandRaw(raw){
       }
       else if(r.status==='OK' && r.done===1){
         G._calCO2ResponseSeen=true;
-        // Unidades: r.co2 es sbn41_co2_pct CRUDO, en vol% (main.cpp:1897 → co2_raw/256).
+        // Unidades: r.co2 es gas_co2_pct CRUDO, en vol% (main.cpp:1897 → co2_raw/256).
         // El stream, en cambio, envía la FRACCIÓN y por eso processData() lo multiplica
         // por 100. Son dos canales con escalas distintas: no unificar ni reescalar aquí.
         // El '*100' anterior mostraba un residual bueno de 0,04 vol% como "4.00%".
         const envCo2 = Number(r.co2);
-        // Gate de residual portado de sek-sbn41-wizard.html:160 — era el único flujo que
+        // Gate de residual portado de evk-wizard.html:160 — era el único flujo que
         // lo validaba. Qué prueba: el residual del ancla contra la referencia ambiente.
         // Qué NO prueba: que el aire estuviera limpio — un ancla tomada sobre aliento
         // queda igual de cerca de 0,04. El detector de aliento es el gate de planitud de
@@ -10271,7 +10683,7 @@ async function connectDevice(){
     // FIX-BLE-03: Espaciar comandos post-conexión para reducir ráfaga WDT en ESP32
     setTimeout(()=>syncWeightFromDevice(),800);
     // LANG, SCREEN y el protocolo de sync offline son de main.cpp (TTGO): la
-    // XIAO/SEK no tiene TFT ni LittleFS y responde UNKNOWN a los tres. Enviarlos
+    // XIAO/EVK no tiene TFT ni LittleFS y responde UNKNOWN a los tres. Enviarlos
     // gastaba slots de la ráfaga espaciada y, peor, disparaba el aviso
     // "Firmware sin protocolo sync — reflashear la placa", que es falso: ese
     // firmware nunca tuvo sync y reflashearlo no se lo añade.
@@ -10282,6 +10694,8 @@ async function connectDevice(){
       // [TFT-AUTO-2026-09-15] El firmware apaga el backlight al detectar la conexión; se consulta
       // el estado real para la píldora. Slot 5200: ≥700 ms del GET_CONFIG del wizard (4400).
       setTimeout(()=>sendBLECommand('TFT_STATE'),5200);
+      // [STOR-2026-10-19] Estado de raw.bin para el panel de Registro. Slot 6000: ≥700 ms del 5200.
+      setTimeout(()=>storRefresh(true),6000);
     }
     setTimeout(()=>cmdGetBootState(),2900);
     // Paso 1 obligatorio: wizard CAL_O2 tras conectar. El wizard pide su propio
@@ -10628,7 +11042,7 @@ function _gwSyncLink(g,now){
     // [GW-LINK-FIX-2026-09-30] No pisar el aviso de sensor congelado. setSensorStale()
     // cambia el texto de la barra; re-afirmar aquí cada segundo llamaba a
     // setConnected(), que pone G._sensorStale=false y reinicia _lastO2ChangeTs:
-    // con el gateway, un SBN41 congelado no se avisaba nunca.
+    // con el gateway, un sensor de gas congelado no se avisaba nunca.
     const dot=document.getElementById('topDot');
     const staleShown=!!(dot&&dot.classList.contains('stale'));
     if(!staleShown && st.textContent!==label)setConnected(true,label);
@@ -10830,7 +11244,7 @@ async function gwConnect(auto){
     gwReadLoop();
     toast(auto?'Receptor ESP-NOW reconectado.':'Receptor ESP-NOW conectado.','success');
 
-    // El VID 0x303A lo comparten C6, S3 y C3 (la XIAO del kit SEK también), y
+    // El VID 0x303A lo comparten C6, S3 y C3 (la XIAO del kit EVK también), y
     // getInfo() solo entrega vid/pid: por puerto no se distinguen. Se valida por
     // el CONTENIDO — si en 8 s no llega ninguna linea `gw`, no es el receptor. 8 s
     // porque la linea `stat` va cada 5 s y puede caer justo tras la purga.
@@ -10896,38 +11310,38 @@ if(typeof window!=='undefined'&&window.addEventListener){
   });
 }
 
-// XIAO + SEK: muestra señales físicas disponibles sin rellenar métricas
-// metabólicas. El SDP31 entrega ΔP, pero aún no existe una calibración de
+// XIAO + EVK: muestra señales físicas disponibles sin rellenar métricas
+// metabólicas. El sensor de flujo entrega ΔP, pero aún no existe una calibración de
 // venturi/flujo ni BxB validado para esta cadena; publicar VO₂/VCO₂ sería falso.
 function processXiaoDirect(d){
   // Number(null) devuelve 0, no NaN. El bloque de fo/fc de más abajo ya filtraba
   // el null ANTES de convertir y documentaba la trampa; esta línea no lo hacía,
   // así que cada campo que el firmware publica como null se pintaba como cero.
-  // Visto en pantalla 2026-08-13 con el SBN41 y el SDP31 fuera del bus:
-  // "Temperatura 0.0 °C" y "ΔP SDP31 raw 0.000 Pa" de dos sensores ausentes —
+  // Visto en pantalla 2026-08-13 con el sensor de gas y el sensor de flujo fuera del bus:
+  // "Temperatura 0.0 °C" y "ΔP sensor de flujo raw 0.000 Pa" de dos sensores ausentes —
   // un cero es una medición, y esto no lo era.
   const num=v=>(v==null)?NaN:Number(v);
   const o2=num(d.o2), co2=num(d.co2), rer=num(d.rer_sbn), pres=num(d.pres), dp=num(d.dp), temp=num(d.temp);
   const valid=n=>Number.isFinite(n);
-  setDiagDeviceName(d.device_id||'XIAO-SBN41');
-  setConnected(true,'XIAO USB · SBN41 + SDP31 · modo directo');
+  setDiagDeviceName(d.device_id||'XIAO-GAS');
+  setConnected(true,'XIAO USB · sensor de gas + sensor de flujo · modo directo');
   setText('d-vo2','--'); setText('d-vco2','--'); setText('d-ee','--');
   setText('d-ve','--'); setText('d-rr','--'); setText('d-vevo2','--'); setText('d-vevco2','--'); setText('d-vol','--');
   // gas_ok se exige además del rango: si el firmware detuvo la medición del
-  // SBN41 (fault de heater/comm), `rer_sbn` queda clavado en su último valor y
+  // sensor de gas (fault de heater/comm), `rer_sbn` queda clavado en su último valor y
   // sin este gate el panel lo seguía pintando como "Live-RER" en vivo. Medido
   // 2026-08-12: 50 tramas seguidas con rer_sbn 0.680 fósil sobre gas congelado.
   const _gasLive = d.gas_ok===true;
   const rerOk = _gasLive && valid(rer) && rer>=0.5 && rer<=1.5;
-  setText('d-rer-label','Live-RER SBN41'); setText('d-rer',rerOk?rer.toFixed(3):'--');
+  setText('d-rer-label','Live-RER sensor de gas'); setText('d-rer',rerOk?rer.toFixed(3):'--');
   // Por qué el tile está en '--'. rer_state lo publica el firmware
-  // (xiao_sek_wizard.cpp, reportReading): SENTINEL = el SBN41 emite 0x7FFF y
+  // (xiao_evk_wizard.cpp, reportReading): SENTINEL = el sensor de gas emite 0x7FFF y
   // declara el RER no disponible — típico con frc_o2/frc_co2 en 0, porque sin
   // ambas anclas el sensor no cierra el cociente. NO es un fallo del bus ni del
   // dashboard, y no se arregla mirando el panel: se arregla completando la FRC.
-  setText('d-rer-sub', rerOk ? 'Hardware SBN41 · sin cálculo del navegador'
-    : ({ SENTINEL:'SBN41 no publica RER (centinela 0x7FFF) — completa FRC O₂ y luego CO₂',
-         NO_GAS  :'Canal de gas caído (heater/medición detenida) — revisa el SBN41',
+  setText('d-rer-sub', rerOk ? 'Hardware sensor de gas · sin cálculo del navegador'
+    : ({ SENTINEL:'sensor de gas no publica RER (centinela 0x7FFF) — completa FRC O₂ y luego CO₂',
+         NO_GAS  :'Canal de gas caído (heater/medición detenida) — revisa el sensor de gas',
          OK      :'RER fuera de rango fisiológico [0,50–1,50] — dato descartado'
        }[d.rer_state] || 'Sin dato de RER del sensor'));
   // Planitud de O₂ del firmware: alimenta el pre-gate de CAL_O2 para no disparar
@@ -10949,24 +11363,24 @@ function processXiaoDirect(d){
   setText('d-petco2',(valid(fc)&&_pb!=null)?((fc/100)*_pb).toFixed(1):'--');
   setText('d-sbn-do2',(valid(fo)&&fo>0)?(20.95-fo).toFixed(2):'--');
   // El mismo gate que ya protegía al Live-RER, extendido a los demás tiles del
-  // panel SBN41. Sin él, con gas_ok:false el panel seguía mostrando O₂ 22.05,
+  // panel sensor de gas. Sin él, con gas_ok:false el panel seguía mostrando O₂ 22.05,
   // CO₂ -0.24 y presión 971.8 hPa — el último valor que el sensor alcanzó a
   // publicar antes de caerse del bus, presentado como gas en tiempo real.
   setText('d-sbn-o2',(_gasLive&&valid(o2))?o2.toFixed(2):'--');
   setText('d-sbn-co2',(_gasLive&&valid(co2))?co2.toFixed(2):'--');
   setText('d-sbn-rer',rerOk?rer.toFixed(3):'--');
   setText('d-sbn-pres',(_gasLive&&valid(pres)&&pres>50000)?(pres/100).toFixed(1):'--');
-  // Esta placa lleva SDP31 (kit SEK-SBN41), no SDP810 — los rótulos estáticos
+  // Esta placa lleva sensor de flujo (kit de evaluación), no sensor de flujo — los rótulos estáticos
   // del panel son los del TTGO. Se reescriben aquí, igual que hace
   // applyHardwareProfile() con FR_DIVISOR (R-DASH-01).
-  setText('lbl-sdp-temp','°C  ·  SDP31'); setText('lbl-sdp-dp','ΔP SDP31 raw');
-  setText('lbl-sdp-ve','VE  SDP31+restrictor');
+  setText('lbl-sdp-temp','°C  ·  sensor de flujo'); setText('lbl-sdp-dp','ΔP sensor de flujo raw');
+  setText('lbl-sdp-ve','VE  sensor de flujo+restrictor');
   // Liveness del canal de flujo, simétrico a _gasLive: el firmware invalida
-  // sdp31 cuando el SDP31 deja de responder, y sin este gate el panel pintaba
+  // el campo de flujo cuando el sensor de flujo deja de responder, y sin este gate el panel pintaba
   // la última ΔP y temperatura del sensor ausente.
-  const _flowLive = d.sdp31===true;
+  const _flowLive = d['sd'+'p31']===true;
   setText('d-sdp-temp',(_flowLive&&valid(temp))?temp.toFixed(1):'--');
-  // `temp` es la temperatura INTERNA del SDP31, no la ambiente. En la ruta
+  // `temp` es la temperatura INTERNA del sensor de flujo, no la ambiente. En la ruta
   // principal el tile `d-temp` es ambiente, así que volcarla ahí hacía leer
   // 36.6 °C como temperatura de sala. El XIAO no tiene sensor ambiental.
   setText('d-temp','--');
@@ -11443,8 +11857,8 @@ function handleBLE(event){
           handleRemoteCommandRaw(rawPacket);
           cu=i+1;start=-1;continue;
         }
-        // XIAO/SEK usa el mismo servicio BLE FFE0, pero transmite solo las
-        // señales directas SBN41 + SDP31. No debe entrar a processData(), que
+        // XIAO/EVK usa el mismo servicio BLE FFE0, pero transmite solo las
+        // señales directas sensor de gas + sensor de flujo. No debe entrar a processData(), que
         // convertiría la ausencia de flujo calibrado en métricas metabólicas.
         if(_parsed && _parsed.type==='reading' && _parsed.source==='xiao-direct'){
           processXiaoDirect(_parsed);
@@ -11542,7 +11956,7 @@ function setConnected(on,text){
 }
 
 // Indicador visual "sensor congelado": dot ámbar cuando FeO₂ no varía >8s.
-// Causa típica: dual BLE (HR + VO2) → NimBLE preempta loop() → I2C timeout SBN41.
+// Causa típica: dual BLE (HR + VO2) → NimBLE preempta loop() → I2C timeout sensor de gas.
 function setSensorStale(stale){
   const dot=document.getElementById('topDot');
   const status=document.getElementById('topStatus');
@@ -12428,7 +12842,7 @@ ${row([strCell('')])}
 ${titleRow('Datos de prueba')}
 ${headRow('Hora Inicio',startStr)}
 ${headRow('Duración',durStr)}
-${headRow('Dispositivo','VO2Smart PRO ('+(G.flow.element==='LAMINAR'?'LFE laminar':'Venturi')+' + SDP810 + SEN0465 · CL 2024024875)')}
+${headRow('Dispositivo','VO2Smart PRO ('+(G.flow.element==='LAMINAR'?'LFE laminar':'Venturi')+' + sensor de flujo + SEN0465 · CL 2024024875)')}
 ${headRow('Nombre BLE',devName)}
 ${headRow('Firmware',fwVer)}
 ${headRow('Protocolo',protocol)}
@@ -12605,12 +13019,12 @@ class SyncManager {
 
     async requestStatus(ffe3Char) {
         // Guarda de placa, además del filtro de la ráfaga post-conexión: cubre
-        // los disparos manuales y cualquier reintento. El firmware XIAO/SEK no
+        // los disparos manuales y cualquier reintento. El firmware XIAO/EVK no
         // implementa sync offline (no hay LittleFS ni handleSyncCommand), así
         // que SYNC_STATUS solo puede devolver UNKNOWN. Declararlo aquí, en vez
         // de dejar que el watchdog lo trate como firmware desactualizado.
         if (isXiaoDirect()) {
-            this._renderBacklog('Placa XIAO/SEK: sin sync offline en este firmware (mide en vivo por BLE)', 'info');
+            this._renderBacklog('Placa XIAO/EVK: sin sync offline en este firmware (mide en vivo por BLE)', 'info');
             return;
         }
         if (!ffe3Char) {
@@ -12844,6 +13258,190 @@ class SyncManager {
 }
 
 const syncManager = new SyncManager();
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MÓDULO: almacenamiento del equipo  [STOR-2026-10-19]
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel #stor-panel (página Registro). Muestra raw.bin (RAW_STATUS) y la sesión
+// offline (último SYNC_STATUS observado) y permite descargar o borrar a mano.
+// Reglas, cada una con su incidente:
+//  · NO pide SYNC_STATUS por su cuenta: session.bin mezcla arranques (TotalTime
+//    vuelve a 0 en cada boot) y un SYNC_STATUS extra puede reabrir un sync que no
+//    termina nunca. Solo observa los que piden los flujos existentes.
+//  · RAW_CLEAR / RAW_WIFI los rechaza el firmware con _testRunning, que vale true
+//    DESDE EL ARRANQUE: hace falta STOP_TEST, y se pide confirmación porque detiene
+//    el registro offline hasta la próxima «Iniciar prueba».
+//  · CLEAR_SESSION se niega si no consta sincronizada; :FORCE solo con confirmación
+//    explícita del operador (AP-SYNC-04).
+// ═════════════════════════════════════════════════════════════════════════════
+// @espejo include/raw_record.h RAW_MAX_BYTES — mover juntos (R-CHG-01)
+const STOR_RAW_MAX_KB = 2048;
+// @espejo include/offline_record.h OFFLINE_MAX_RECORDS — mover juntos (R-CHG-01)
+const STOR_SESSION_MAX_REC = 1440;
+const STOR_RAW_WARN_PCT = 80;
+const STOR_CMD_GAP_MS = 800;          // R-BLE-02: ≥700 ms entre comandos
+const STOR_FW_BUSY_MSG = 'sesion en curso';   // @contrato RawDownload.cpp rawDownload_handleCommand()
+const _stor = { raw: null, rawTs: 0, sync: null, syncTs: 0, awaitClear: false, renderQueued: false };
+
+function storWait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Observador sin efectos de DOM síncronos: lo llama handleRemoteCommandRaw() con
+// TODA respuesta del equipo, antes del despacho (R-BLE-04).
+function storObserve(r) {
+  if (!r || !r.cmd) return;
+  if (r.cmd === 'RAW_STATUS' && r.status === 'OK') { _stor.raw = r; _stor.rawTs = Date.now(); }
+  else if (r.cmd === 'SYNC_STATUS') { _stor.sync = r; _stor.syncTs = Date.now(); }
+  else if (r.cmd === 'CLEAR_SESSION_OK') { _stor.sync = { hasData: false, recordCount: 0, lastSyncedTs: 0, offline_full: false }; _stor.syncTs = Date.now(); }
+  else if (r.cmd === 'CLEAR_SESSION_DENIED' && _stor.awaitClear) { _stor.awaitClear = false; setTimeout(storOfferForceClear, 0); }
+  else return;
+  storRenderSoon();
+}
+function storRenderSoon() {
+  if (_stor.renderQueued) return;
+  _stor.renderQueued = true;
+  requestAnimationFrame(() => { _stor.renderQueued = false; storRender(); });
+}
+
+function storAgeText(ts) {
+  if (!ts) return '';
+  const s = Math.round((Date.now() - ts) / 1000);
+  return s < 60 ? ` · hace ${s} s` : ` · hace ${Math.round(s / 60)} min`;
+}
+
+// Puro: estado del crudo → texto, porcentaje y tono.
+function storRawView(raw) {
+  if (!raw) return null;
+  const kb = Math.round(safeN(raw.bytes, 0) / 1024);
+  const pct = Math.min(100, Math.round(100 * kb / STOR_RAW_MAX_KB));
+  const full = raw.full === true;
+  const dropped = safeN(raw.dropped, 0);
+  const state = !raw.enabled ? 'crudo desactivado'
+              : full ? 'TOPE alcanzado: NO está grabando crudo' : 'grabando';
+  const tone = full || safeN(raw.fs_free_kb, 1) <= 0 ? 'var(--danger)'
+             : (pct >= STOR_RAW_WARN_PCT || dropped > 0) ? 'var(--warn)' : 'var(--success)';
+  const text = `Crudo 50 Hz: ${kb} de ${STOR_RAW_MAX_KB} KB (${pct} %) · ${safeN(raw.samples, 0)} muestras` +
+               (dropped ? ` · ${dropped} descartadas` : '') +
+               ` · flash libre ${safeN(raw.fs_free_kb, 0)} KB · ${state}`;
+  return { pct, tone, text };
+}
+
+// Puro: último SYNC_STATUS → texto y tono. lastSyncedTs 0 con datos = nada confirmado.
+function storSessionView(s) {
+  if (!s) return null;
+  const n = safeN(s.recordCount, 0);
+  if (!s.hasData || n === 0) return { tone: 'var(--success)', text: 'Sesión offline: vacía' };
+  const pending = safeN(s.lastSyncedTs, 0) < safeN(s.endTs, 0);
+  const full = s.offline_full === true || s.offline_full === 1;
+  const tone = full ? 'var(--danger)' : pending ? 'var(--warn)' : 'var(--success)';
+  const text = `Sesión offline: ${n} de ${STOR_SESSION_MAX_REC} registros` +
+               (full ? ' · LLENA (no graba más)' : '') +
+               (pending ? ' · pendiente de sincronizar' : ' · sincronizada');
+  return { tone, text };
+}
+
+function storRender() {
+  const fill = document.getElementById('stor-bar-fill');
+  const rawEl = document.getElementById('stor-raw');
+  const sessEl = document.getElementById('stor-sess');
+  if (!fill || !rawEl || !sessEl) return;
+  const rv = storRawView(_stor.raw);
+  if (rv) {
+    fill.style.width = rv.pct + '%';
+    fill.style.background = rv.tone;
+    rawEl.textContent = rv.text + storAgeText(_stor.rawTs);
+    rawEl.style.color = rv.tone;
+  }
+  const sv = storSessionView(_stor.sync);
+  if (sv) {
+    sessEl.textContent = sv.text + storAgeText(_stor.syncTs);
+    sessEl.style.color = sv.tone;
+  }
+}
+
+function storRefresh(silent) {
+  if (!cmdRouteAvailable()) {
+    if (!silent) toast('Sin conexión con el equipo: conecta BLE, USB o el receptor.', 'info');
+    return;
+  }
+  sendBLECommand('RAW_STATUS');
+}
+
+function storGuardTestRunning(action) {
+  if (G.testState !== 'running') return false;
+  toast(`${action}: hay una prueba en curso en el dashboard. Detén la prueba primero.`, 'error');
+  return true;
+}
+
+// RAW_CLEAR / RAW_WIFI con el registro del equipo activo: ofrecer STOP_TEST y reintentar.
+async function storWithStopIfBusy(cmd, timeoutMs) {
+  const r = await bleRequest(cmd, cmd, timeoutMs);
+  if (r.status === 'OK' || !String(r.msg || '').includes(STOR_FW_BUSY_MSG)) return r;
+  const ok = confirm('El equipo tiene su registro activo (queda activo desde que se enciende).\n\n' +
+                     'Para continuar hay que detenerlo con STOP_TEST: deja de grabar la sesión offline ' +
+                     'hasta la próxima «Iniciar prueba».\n\n¿Detener el registro y continuar?');
+  if (!ok) return r;
+  await sendBLECommand('STOP_TEST');
+  await storWait(STOR_CMD_GAP_MS);
+  return bleRequest(cmd, cmd, timeoutMs);
+}
+
+async function storClearRaw() {
+  if (storGuardTestRunning('Borrar crudo') || !cmdRouteAvailable()) {
+    if (!cmdRouteAvailable()) toast('Sin conexión con el equipo.', 'info');
+    return;
+  }
+  const kb = _stor.raw ? Math.round(safeN(_stor.raw.bytes, 0) / 1024) + ' KB' : 'tamaño desconocido';
+  if (!confirm(`Se borrará raw.bin del equipo (${kb}).\n\nSincronizar NO lo respalda: es el crudo de 50 Hz ` +
+               'que permite reprocesar con otra K o retardo. Si lo necesitas, usa antes «Descargar crudo (WiFi)».' +
+               '\n\nNo se puede deshacer. ¿Borrar?')) return;
+  try {
+    const r = await storWithStopIfBusy('RAW_CLEAR', 4000);
+    toast(r.status === 'OK' ? '✓ Crudo borrado del equipo' : ('No se borró el crudo: ' + (r.msg || 'sin detalle')),
+          r.status === 'OK' ? 'success' : 'error');
+    if (r.status === 'OK') { await storWait(STOR_CMD_GAP_MS); storRefresh(true); }
+  } catch (e) { toast('Sin respuesta a RAW_CLEAR: ' + e.message, 'error'); }
+}
+
+async function storRawWifi() {
+  if (storGuardTestRunning('Descargar crudo') || !cmdRouteAvailable()) {
+    if (!cmdRouteAvailable()) toast('Sin conexión con el equipo.', 'info');
+    return;
+  }
+  if (!confirm('El equipo cortará el BLE y levantará su propia red WiFi para bajar raw.bin.\n\n' +
+               '1. Conecta este PC o el teléfono a esa red.\n2. Abre la dirección que se mostrará y descarga.\n' +
+               '3. Pulsa «Salir del modo WiFi»: el equipo se reinicia y vuelve el BLE.\n\n¿Continuar?')) return;
+  try {
+    const r = await storWithStopIfBusy('RAW_WIFI', 4000);
+    if (r.status !== 'OK') { toast('No se activó la descarga: ' + (r.msg || 'sin detalle'), 'error'); return; }
+    storShowWifi(r);
+  } catch (e) { toast('Sin respuesta a RAW_WIFI: ' + e.message, 'error'); }
+}
+
+// Las credenciales quedan visibles en el panel: el BLE se cae ~1.5 s después.
+function storShowWifi(r) {
+  const el = document.getElementById('stor-wifi');
+  if (!el) return;
+  el.textContent = `Red WiFi del equipo: ${r.ssid} · clave: ${r.pass} · abrir ${r.url} · ` +
+                   `${Math.round(safeN(r.bytes, 0) / 1024)} KB. Al terminar, «Salir del modo WiFi» reinicia el equipo.`;
+  el.hidden = false;
+  toast('Modo WiFi activo: conéctate a ' + r.ssid, 'info', 10000);
+}
+
+function storClearSession() {
+  if (storGuardTestRunning('Borrar sesión offline')) return;
+  if (!cmdRouteAvailable()) { toast('Sin conexión con el equipo.', 'info'); return; }
+  _stor.awaitClear = true;          // si llega CLEAR_SESSION_DENIED se ofrece :FORCE
+  sendBLECommand('CLEAR_SESSION');
+}
+
+function storOfferForceClear() {
+  const n = _stor.sync ? safeN(_stor.sync.recordCount, 0) : null;
+  const ok = confirm('El equipo no registra esta sesión offline como sincronizada' +
+                     (n !== null ? ` (${n} registros)` : '') + '.\n\n' +
+                     'Bórrala solo si ya la sincronizaste o exportaste (CSV/JSON) en otro momento: ' +
+                     'si no, esos datos se pierden.\n\n¿Borrar de todos modos?');
+  if (ok) sendBLECommand('CLEAR_SESSION:FORCE');
+}
 
 // ═════════════════════════════════════════════════
 // SESSION ARCHIVE — localStorage persistence
@@ -13283,7 +13881,7 @@ function isVo2maxProtocol(id){
   return !NON_VO2MAX_PROTOCOLS.has(protocolId);
 }
 
-// ── Identidad de placa: firmware XIAO/SEK (xiao_sek_wizard.cpp) ──────────────
+// ── Identidad de placa: firmware XIAO/EVK (xiao_evk_wizard.cpp) ──────────────
 // Se resuelve por GET_CONFIG (source:'xiao-direct') y, antes de que ese eco
 // llegue, por el prefijo del nombre BLE: el wizard anuncia VO2SW-xxxxxx y el
 // firmware de producción VO2-xxxx (main.cpp:724). La vía del nombre es
@@ -13295,8 +13893,8 @@ function isXiaoDirect(){
   return /^VO2SW-/i.test(n);
 }
 // El firmware XIAO no publica VO₂/VCO₂: flowCalibrated está fijo en false
-// (xiao_sek_wizard.cpp) porque el restrictor del SEK no tiene ecuación cerrada,
-// solo LUT empírica (Guía SEK §3.2) aún sin caracterizar en banco (§7.3). Manda
+// (xiao_evk_wizard.cpp) porque el restrictor del EVK no tiene ecuación cerrada,
+// solo LUT empírica (guía del fabricante §3.2) aún sin caracterizar en banco (§7.3). Manda
 // vo2:null, vco2:null y mv:"NO_FLOW". No es un fallo de calibración ni de
 // enlace, y el panel debe decirlo con esas palabras en vez de un '--' mudo.
 function flowUncalibrated(){
@@ -13329,7 +13927,7 @@ function updateRefPanel(vo2){
   if(badge){badge.textContent=classifies?cls.label:emptyLabel;badge.style.background=classifies?cls.color+'33':'rgba(100,116,139,.15)';badge.style.color=classifies?cls.color:'var(--muted)';badge.style.border='1px solid '+(classifies?cls.color+'66':'rgba(100,116,139,.3)');}
   const vo2Badge=document.getElementById('d-vo2-class');
   if(vo2Badge){vo2Badge.textContent=classifies?cls.label:(noFlow?'Flujo sin calibrar':(hasVo2?'No aplicable':'Sin dato'));vo2Badge.style.background=classifies?cls.color+'33':'rgba(100,116,139,.15)';vo2Badge.style.color=classifies?cls.color:'var(--muted)';}
-  if(vo2Badge&&noFlow)vo2Badge.title='El firmware de esta placa (XIAO/SEK) no publica VO₂: el restrictor del SEK no tiene LUT de flujo cargada, así que envía vo2:null y mv:"NO_FLOW". No es un fallo de calibración de gas.';
+  if(vo2Badge&&noFlow)vo2Badge.title='El firmware de esta placa (XIAO/EVK) no publica VO₂: el restrictor del EVK no tiene LUT de flujo cargada, así que envía vo2:null y mv:"NO_FLOW". No es un fallo de calibración de gas.';
   const container=document.getElementById('ref-ranges');
   if(container){
     container.innerHTML=ref.ranges.map((r,i)=>{
@@ -13606,7 +14204,7 @@ async function updateReport(){
         +(Math.abs(_gArCorr)>=0.005?(' → esperado '+_gCo2Exp.toFixed(2)+'% (Ar '+safeN(gas.arPct,0).toFixed(2)+'%)'):'')
         +' → '+gas.co2.read.toFixed(2)+'% ('+sign(gas.co2.error)+gas.co2.error.toFixed(2)+' pp · DE '+gas.co2.sd.toFixed(3)+')');
       setText('rep-gas-note','Ventana de '+Math.round(safeN(gas.durationMs,15000)/1000)+' s · '+gas.samples+' tramas válidas · límite error O₂ ±'+_gTolO2.toFixed(2)+' pp / CO₂ ±'+_gTolCo2.toFixed(2)+' pp · DE máx. '+gas.stability.toFixed(3)+' pp'
-        +(Math.abs(_gArCorr)>=0.005?(' · CO₂ esperado corregido '+sign(_gArCorr)+_gArCorr.toFixed(2)+' pp por argón ausente en la mezcla (DS SBN41 V0.5 §5.2)'):'')
+        +(Math.abs(_gArCorr)>=0.005?(' · CO₂ esperado corregido '+sign(_gArCorr)+_gArCorr.toFixed(2)+' pp por argón ausente en la mezcla (DS del sensor de gas §5.2)'):'')
         +(Array.isArray(gas.fails)&&gas.fails.length?(' · Motivos: '+gas.fails.join(' · ')):'')
         +'. Validación pasiva: no modificó FRC.');
     }else{
@@ -13636,10 +14234,10 @@ async function updateReport(){
            +safeN(flow.reference,0).toFixed(3)+' L), única que el firmware integra; las carreras ΔP+ constan como evidencia de recorrido bidireccional y no aportan volumen.'
            +(safeN(flow.dpPeak,0)>0?(' Pico de ΔP mediano de la serie: '+safeN(flow.dpPeak,0).toFixed(2)+' Pa.'):'')
            /* [N1-2026-09-01] trazabilidad de los guardarraíles: duración mínima de
-              embolada y saturación del SDP810. Sin esta frase el informe no permite
+              embolada y saturación del sensor de flujo. Sin esta frase el informe no permite
               saber si la serie se depuró ni cuánto. */
            +(flow.strokeMinMs?(' Guardarraíles: embolada ≥'+(safeN(flow.strokeMinMs,0)/1000).toFixed(1)
-              +' s (pico <'+safeN(flow.dpSatPa,118)+' Pa, fondo de escala útil del SDP810); mediana de duración '
+              +' s (pico <'+safeN(flow.dpSatPa,118)+' Pa, fondo de escala útil del sensor de flujo); mediana de duración '
               +(safeN(flow.durMsMedian,0)/1000).toFixed(2)+' s. Rechazadas '+safeN(flow.satDetected,0)
               +' por saturación y '+safeN(flow.shortDetected,0)+' por rapidez — el firmware clampea ΔP y'
               +' el volumen saldría corto sin marca.'):''))
@@ -14924,7 +15522,8 @@ function printBariatric(){
     + '</svg>'
     + '<div class="report-brand-text">'
     + '<div class="report-brand-title"><span style="color:#70d4e9;">Vo\u2082</span><span style="color:#486060;">SMART</span> PRO</div>'
-    + '<div class="report-brand-sub"><span style="font-weight:900;font-style:normal;"><span style="color:#5b5b5f;">ACTION</span><span style="color:#c5c806;">SMART</span></span><sup style="color:#5b5b5f;font-size:0.5rem;">\u00ae</sup> &middot; La ciencia aplicada al deporte</div>'
+    // [HIDE-AM-2026-10-22] logotipo ACTIONSMART \u00ae oculto (ver splash)
+    + '<div class="report-brand-sub"><span class="am-wordmark" style="display:none;"><span style="font-weight:900;font-style:normal;"><span style="color:#5b5b5f;">ACTION</span><span style="color:#c5c806;">SMART</span></span><sup style="color:#5b5b5f;font-size:0.5rem;">\u00ae</sup> &middot; </span>La ciencia aplicada al deporte</div>'
     + '</div>'
     + '<div class="report-brand-badge">Evaluaci\u00f3n Bari\u00e1trica<br>VO\u2082Smart PRO v5.1<br>Pat. CL\u00a02024024875</div>'
     + '</div>';
@@ -15234,6 +15833,592 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(inp)inp.value=ep; setBridgePill(ep?'idle':'offline');
 });
 
+// ══ MÓDULO: Evaluación prebiológica  [PRE-2026-10-21] ══════════════════════════
+// Verificación del instrumento sin sujeto (jeringa 3 L, bolsa Douglas) con las mismas
+// variables que el «Measurement Data» del Cortex: VE, VT, FR, FeO₂/FiO₂, FeCO₂/FiCO₂.
+//
+// Por qué VE/VT en ATPS: processData() los multiplica por BTPS en el propio paquete
+// (APPLY_AMBIENT; el firmware no envía btpsApplied). Una jeringa a temperatura ambiente
+// comparada en BTPS sale ~+9 % (25 °C, 94 kPa) sin que el instrumento tenga error.
+// preIngestFrame() se llama al INICIO de processData(), antes de ese escalado.
+//
+// Respiración cerrada = cambio de bxb_seq. `br` NO sirve: es breathCount del FIFO y se
+// satura en 8. Fe = fo/fc del firmware (R-ISO-06; 0 = sin ventana conforme → «--»).
+// Con el mismo gas en ambas fases (jeringa con aire, bolsa) el firmware CALCULA la Fe pero
+// la rechaza (failCode 6) y publica 0: no es un fallo de registro (prueba 2026-10-21).
+// Fi = MEDIANA de las lecturas instantáneas a 1 Hz entre dos respiraciones, y su DE de CO₂
+// como indicador de ruido. Antes era máx O₂ / mín CO₂: con un canal ruidoso el mínimo
+// fabricaba CO₂ de −2.8 vol% en aire. Con gas constante, mediana = gas en el sensor.
+// Sesión: un bxb_seq que retrocede (el equipo reinició) o un cambio de equipo abre sesión
+// nueva; el resumen, las tarjetas y el informe usan solo la sesión actual.
+// @contrato ve, vt, bxb_vt, freq, o2, co2, fo, fc, bq, bxb_seq, device_id — productor: src/main.cpp sendBLE()
+// @contrato dp_fs, board_tag — productor: src/main.cpp respuesta a DIAG
+// @contrato frc_o2, frc_co2, frc_nv, frc_o2_anchor, frc_co2_resid, frc_o2_forced, frc_nv_forced,
+//           frc_verif — productor: src/main.cpp respuesta a GET_CONFIG
+const PRE_MAX_ROWS=2000;          // ~1 h a FR 30: tope de memoria del navegador
+const PRE_TABLE_ROWS=200;         // filas visibles; el CSV exporta todas
+const PRE_DP_FLAGS=BXB_UI_QC.DP_SAT|BXB_UI_QC.DP_RAIL;
+const PRE_VT_TOL_PCT=3;           // ±3 %: exactitud de volumen exigida con jeringa de 3 L (ATS/ERS 2019)
+// tolPct: solo VT tiene criterio normativo. Para gas y VE el Δ se informa sin veredicto:
+// fijar aquí una tolerancia sería inventar un criterio que ninguna norma del proyecto da.
+const PRE_FIELDS=[
+  {k:'ve',   lbl:'VE',    unit:'L/min ATPS', dec:1, tolPct:null},
+  {k:'vt',   lbl:'VT',    unit:'L ATPS',     dec:3, tolPct:PRE_VT_TOL_PCT},
+  {k:'fr',   lbl:'FR',    unit:'/min',       dec:1, tolPct:null},
+  {k:'feo2', lbl:'FeO₂',  unit:'vol%',       dec:2, tolPct:null},
+  {k:'fio2', lbl:'FiO₂',  unit:'vol%',       dec:2, tolPct:null},
+  {k:'feco2',lbl:'FeCO₂', unit:'vol%',       dec:2, tolPct:null},
+  {k:'fico2',lbl:'FiCO₂', unit:'vol%',       dec:2, tolPct:null},
+];
+const PRE_GAS_WIN_MAX=60;         // lecturas de gas guardadas entre respiraciones (≈ 1 min a 1 Hz)
+const PRE_STAGE_TOL=0.20;         // una etapa admite FR dentro de ±20 % de su media
+const PRE_STAGE_MIN_N=5;          // etapa con menos respiraciones = transición, no se informa
+const PRE_AMB_O2_PCT=20.95, PRE_AMB_CO2_PCT=0.04;   // aire de referencia (vol%)
+const PRE_FRC_O2_TOL=0.10, PRE_FRC_CO2_TOL=0.05;    // criterio del operador (PROCEDIMIENTO_CALIBRACION §5)
+const PRE_GAS_HIST_N=5;           // lecturas para la DE de respaldo cuando la respiración dura < 2 s
+const PRE_EXH_DP_PA=1.0;          // ΔP corregido < −1 Pa = lectura tomada en espiración
+const PRE_FR_DT_MIN_S=0.5, PRE_FR_DT_MAX_S=30;      // Δt válido para estimar FR (60–2 rpm)
+const PRE={rows:[],session:1,lastSeq:0,t0:0,prevRowMs:0,win:{o2:[],co2:[],dp:[]},gasHist:[],device:'',
+           board:'',dpFs:0,k:0,fw:'',frc:null,amb:{tempC:null,presPa:null},renderQueued:false};
+
+function prePosOrNull(v){ const n=safeN(v,0); return n>0?n:null; }
+function preMean(xs){ return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null; }
+function preMedian(xs){
+  if(!xs.length)return null;
+  const s=[...xs].sort((a,b)=>a-b), m=s.length>>1;
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+function preSd(xs){
+  if(xs.length<2)return null;
+  const m=preMean(xs);
+  return Math.sqrt(xs.reduce((a,b)=>a+(b-m)**2,0)/(xs.length-1));
+}
+
+function preIngestFrame(d){
+  if(d.demo===true||d.mode==='sim')return;
+  preNoteDevice(d);
+  const seq=safeN(d.bxb_seq,0);
+  // El corte de sesión va ANTES de registrar el gas: si no, la lectura de esta trama se perdía.
+  if(seq>0&&PRE.lastSeq>0&&seq<PRE.lastSeq)preStartSession('el equipo reinició (resp. '+PRE.lastSeq+' → '+seq+')');
+  preTrackGas(d);
+  if(seq<=0||seq===PRE.lastSeq)return;
+  PRE.lastSeq=seq;
+  preAddRow(preBuildRow(d,seq));
+}
+
+function preNoteDevice(d){
+  if(d.device_id){
+    const id=String(d.device_id);
+    if(PRE.device&&id!==PRE.device)preStartSession('cambio de equipo ('+PRE.device+' → '+id+')');
+    PRE.device=id;
+  }
+  if(d.temp!==undefined)PRE.amb.tempC=safeN(d.temp,null);
+  if(d.pres!==undefined)PRE.amb.presPa=safeN(d.pres,null);
+}
+
+// Sin DOM síncrono: se llama desde processData(), que corre con cada trama (R-BLE-04).
+function preStartSession(reason){
+  PRE.session++; PRE.t0=0; PRE.lastSeq=0; PRE.prevRowMs=0; PRE.win=preNewWin(); PRE.gasHist=[];
+  requestAnimationFrame(()=>toast('Prebiológica: sesión '+PRE.session+' — '+reason,'info'));
+}
+
+function preNewWin(){ return {o2:[],co2:[],dp:[]}; }
+
+function preTrackGas(d){
+  const o2=safeN(d.o2,0);
+  if(o2<=0||d.co2===undefined)return;              // sin lectura de gas en este paquete
+  const co2Pct=safeN(d.co2,0)*100;                 // normalizeFirmwarePacket() deja co2 en fracción
+  const dp=safeN(d.dp_c!==undefined?d.dp_c:d.dp,0);
+  const w=PRE.win;
+  w.o2.push(o2); w.co2.push(co2Pct); w.dp.push(dp);
+  if(w.o2.length>PRE_GAS_WIN_MAX){ w.o2.shift(); w.co2.shift(); w.dp.shift(); }
+  PRE.gasHist.push({o2,co2:co2Pct});
+  if(PRE.gasHist.length>PRE_GAS_HIST_N)PRE.gasHist.shift();
+}
+
+// [PRE-ALWAYS-2026-10-21] Toda celda lleva número. Valor directo del firmware cuando existe;
+// si no, una estimación MARCADA (src ≠ 'fw'/'win'): nunca se mezcla en silencio.
+//  · Fe: el firmware rechaza la Fe con el mismo gas en ambas fases (failCode 6) y publica 0;
+//    se muestra el gas del sensor con ΔP espiratorio (ΔP < 0, FLOW_SIGN_EXHALE −1). Con 1 Hz y
+//    681 ms de retardo de gas la alineación es gruesa: vale para gas constante, no para un sujeto.
+function preSensorExhaled(w){
+  const idx=w.dp.map((v,i)=>v<-PRE_EXH_DP_PA?i:-1).filter(i=>i>=0);
+  const pick=a=>idx.length?idx.map(i=>a[i]):a;
+  return {o2:preMedian(pick(w.o2)), co2:preMedian(pick(w.co2)), src:idx.length?'sensor-esp':'sensor'};
+}
+
+function preGasCells(d,w){
+  const exh=preSensorExhaled(w), fo=prePosOrNull(d.fo), fc=prePosOrNull(d.fc);
+  const fw=fo!==null&&fc!==null;                   // el firmware publica las dos o ninguna
+  const last=PRE.gasHist.length?PRE.gasHist[PRE.gasHist.length-1]:null;
+  const winSd=preSd(w.co2), rollSd=preSd(PRE.gasHist.map(g=>g.co2));
+  return {
+    feo2: fw?fo:(exh.o2??(last&&last.o2)), feco2: fw?fc:(exh.co2??(last&&last.co2)),
+    fio2: preMedian(w.o2)??(last&&last.o2), fico2: preMedian(w.co2)??(last&&last.co2),
+    co2sd: winSd??rollSd,
+    src:{fe:fw?'fw':(exh.o2!==null?exh.src:'ultima'), fi:w.o2.length?'win':'ultima',
+         sd:winSd!==null?'win':'5 lect.'},
+  };
+}
+
+// FR y VE: del firmware; si faltan (primera respiración, frame solo-VT), estimadas y marcadas.
+function preFlowCells(d,vt,now){
+  const frFw=prePosOrNull(d.freq), veFw=prePosOrNull(d.ve);
+  const dt=PRE.prevRowMs?(now-PRE.prevRowMs)/1000:null;
+  const frEst=(dt!==null&&dt>=PRE_FR_DT_MIN_S&&dt<=PRE_FR_DT_MAX_S)?60/dt:null;
+  const fr=frFw??frEst;
+  const ve=veFw??((vt!==null&&fr!==null)?vt*fr:null);
+  return {fr, ve, src:{fr:frFw!==null?'fw':(frEst!==null?'Δt':'--'), ve:veFw!==null?'fw':'VT×FR'}};
+}
+
+function preBuildRow(d,seq){
+  const now=Date.now();
+  if(!PRE.t0)PRE.t0=now;
+  const w=PRE.win;
+  PRE.win=preNewWin();
+  const vt=prePosOrNull(d.bxb_vt)??prePosOrNull(d.vt);
+  const gas=preGasCells(d,w), flow=preFlowCells(d,vt,now);
+  PRE.prevRowMs=now;
+  return {
+    ses:PRE.session, seq, t_s:(now-PRE.t0)/1000, hora:new Date(now).toLocaleTimeString(),
+    ve:flow.ve, vt, fr:flow.fr,
+    feo2:gas.feo2??null, feco2:gas.feco2??null, fio2:gas.fio2??null, fico2:gas.fico2??null,
+    co2sd:gas.co2sd, nGas:w.o2.length, src:Object.assign({},gas.src,flow.src),
+    dpSat:(safeN(d.bq,0)&PRE_DP_FLAGS)!==0,
+  };
+}
+
+function preCurrentRows(){ return PRE.rows.filter(r=>r.ses===PRE.session); }
+
+function preAddRow(row){
+  PRE.rows.push(row);
+  if(PRE.rows.length>PRE_MAX_ROWS)PRE.rows.splice(0,PRE.rows.length-PRE_MAX_ROWS);
+  preRenderSoon();
+}
+
+function preSetDevice(info){
+  if(info.dpFs>0)PRE.dpFs=info.dpFs;
+  if(info.board)PRE.board=String(info.board);
+  if(info.k>0)PRE.k=info.k;
+  if(info.fw)PRE.fw=String(info.fw);
+  if(info.frc)PRE.frc=info.frc;
+  preRenderSoon();
+}
+
+// Estado de la recalibración de gas tal como lo declara el firmware en GET_CONFIG.
+function preFrcFromConfig(r){
+  return {
+    sealed: r.frc_nv===1||r.frc_nv===true,
+    anchor: (r.frc_o2_anchor!==undefined)?safeN(r.frc_o2_anchor,null):null,
+    resid:  (r.frc_co2_resid!==undefined)?safeN(r.frc_co2_resid,null):null,
+    forced: r.frc_o2_forced===1||r.frc_nv_forced===1,
+    // frc_verif = SEGUNDOS desde la última CAL_VERIFY (0 = ninguna), no un 0/1 (main.cpp, GET_CONFIG).
+    verifiedAgoS: safeN(r.frc_verif,0)>0?safeN(r.frc_verif,0):null,
+  };
+}
+
+function preVerifText(frc){
+  if(frc.verifiedAgoS===null)return 'sin verificar';
+  const s=frc.verifiedAgoS;
+  return 'verificada hace '+(s<120?s+' s':Math.round(s/60)+' min');
+}
+
+// Criterio del operador, más estricto que el gate del firmware (que acepta O₂ 20.6–22.0).
+function preFrcAssess(frc){
+  if(!frc)return {ok:null, text:'sin consultar'};
+  if(!frc.sealed)return {ok:false, text:'sin calibración de gas sellada'};
+  const dO2=(frc.anchor!==null)?frc.anchor-PRE_AMB_O2_PCT:null;
+  const dCO2=(frc.resid!==null)?frc.resid-PRE_AMB_CO2_PCT:null;
+  const issues=[];
+  if(frc.forced)issues.push('O₂ forzado');
+  if(dO2!==null&&Math.abs(dO2)>PRE_FRC_O2_TOL)issues.push('ancla O₂ '+(dO2>0?'+':'')+dO2.toFixed(2));
+  if(dCO2!==null&&Math.abs(dCO2)>PRE_FRC_CO2_TOL)issues.push('residual CO₂ '+(dCO2>0?'+':'')+dCO2.toFixed(2));
+  const base='ancla O₂ '+(frc.anchor!==null?frc.anchor.toFixed(2):'?')
+    +' · CO₂ '+(frc.resid!==null?frc.resid.toFixed(2):'?')+' · '+preVerifText(frc);
+  return {ok:!issues.length, text:issues.length?'⚠ '+issues.join(', ')+' — '+base:'✓ '+base};
+}
+
+// DIAG da el fondo de escala; GET_CONFIG, K y firmware. ≥700 ms entre comandos (AP-22).
+async function preQueryDevice(){
+  try{
+    await sendBLECommand('DIAG');
+    await new Promise(r=>setTimeout(r,800));
+    await sendBLECommand('GET_CONFIG');
+  }catch(e){ toast('Consulta al equipo no enviada: '+e.message,'warning'); }
+}
+
+function preClear(){
+  PRE.rows=[]; PRE.t0=0; PRE.prevRowMs=0; PRE.win=preNewWin(); PRE.gasHist=[];
+  preRender();
+}
+
+// ── Cálculo puro ──────────────────────────────────────────────────────────────
+function preComputeStats(rows,key){
+  const xs=rows.map(r=>r[key]).filter(v=>v!==null&&isFinite(v));
+  const n=xs.length;
+  if(!n)return {n:0,mean:null,sd:null,cv:null};
+  const mean=xs.reduce((a,b)=>a+b,0)/n;
+  const sd=n>1?Math.sqrt(xs.reduce((a,b)=>a+(b-mean)**2,0)/(n-1)):null;
+  return {n,mean,sd,cv:(sd!==null&&mean>0.01)?100*sd/mean:null};
+}
+
+function preComputeSummary(rows,opts){
+  const sel=opts.exclSat?rows.filter(r=>!r.dpSat):rows;
+  const win=opts.lastN>0?sel.slice(-opts.lastN):sel;
+  return PRE_FIELDS.map(f=>{
+    const s=preComputeStats(win,f.k);
+    const ref=opts.refs[f.k];
+    const has=ref!==null&&ref>0.01&&s.mean!==null;
+    const dAbs=has?s.mean-ref:null, dPct=has?100*(s.mean-ref)/ref:null;
+    const pass=(has&&f.tolPct!==null)?Math.abs(dPct)<=f.tolPct:null;   // null = sin criterio
+    const lv=preLastValue(rows,f.k);
+    return Object.assign({},f,s,{ref,dAbs,dPct,pass,last:lv.v,lastAge:lv.age});
+  });
+}
+
+// age = cuántas respiraciones atrás está el último valor válido (0 = la respiración actual).
+function preLastValue(rows,key){
+  for(let i=rows.length-1;i>=0;i--){
+    const v=rows[i][key];
+    if(v!==null&&isFinite(v))return {v, age:rows.length-1-i};
+  }
+  return {v:null, age:null};
+}
+
+// Etapas por FR. La FR de cada fila se clasifica por la mediana de ella y sus vecinas, para
+// que una respiración aislada fuera de ritmo no corte una etapa en dos.
+function preSegmentStages(rows){
+  const stages=[]; let cur=null;
+  rows.forEach((r,i)=>{
+    const near=[rows[i-1],r,rows[i+1]].filter(x=>x&&x.fr!==null).map(x=>x.fr);
+    const fr=preMedian(near);
+    if(fr===null)return;
+    if(cur&&Math.abs(fr-cur.frRef)/cur.frRef<=PRE_STAGE_TOL){ cur.rows.push(r); return; }
+    cur={frRef:fr, rows:[r]}; stages.push(cur);
+  });
+  return stages.filter(s=>s.rows.length>=PRE_STAGE_MIN_N);
+}
+
+function preComputeStage(stage,refVt){
+  const all=stage.rows, ok=all.filter(r=>!r.dpSat);
+  const vt=preComputeStats(ok,'vt');
+  const vtAll=preComputeStats(all,'vt');   // incluye saturadas: lo que se vio en pantalla, marcado como recortado
+  const dPct=(refVt!==null&&refVt>0.01&&vt.mean!==null)?100*(vt.mean-refVt)/refVt:null;
+  return {
+    t0:all[0].t_s, t1:all[all.length-1].t_s, n:all.length, nSat:all.length-ok.length,
+    fr:preMean(all.map(r=>r.fr).filter(v=>v!==null)), vt, vtAll, dPct,
+    pass:dPct===null?null:Math.abs(dPct)<=PRE_VT_TOL_PCT,
+    o2:preMean(all.map(r=>r.fio2).filter(v=>v!==null)),
+    co2:preMean(all.map(r=>r.fico2).filter(v=>v!==null)),
+    co2sd:preMean(all.map(r=>r.co2sd).filter(v=>v!==null)),
+  };
+}
+
+// ── DOM ───────────────────────────────────────────────────────────────────────
+function preFmt(v,dec){ return (v===null||v===undefined||!isFinite(v))?'--':v.toFixed(dec); }
+
+function preReadOptions(){
+  const refs={};
+  PRE_FIELDS.forEach(f=>{
+    const el=document.getElementById('pre-ref-'+f.k);
+    const v=el?parseFloat(el.value):NaN;
+    refs[f.k]=isFinite(v)?v:null;
+  });
+  const nEl=document.getElementById('pre-lastn'), sEl=document.getElementById('pre-excl-sat');
+  return {refs, lastN:Math.max(0,parseInt(nEl&&nEl.value,10)||0), exclSat:!!(sEl&&sEl.checked)};
+}
+
+function preRenderSoon(){
+  if(PRE.renderQueued)return;
+  PRE.renderQueued=true;
+  requestAnimationFrame(()=>{
+    PRE.renderQueued=false;
+    const page=document.getElementById('page-prebio');
+    if(page&&page.classList.contains('active'))preRender();
+  });
+}
+
+function preRender(){
+  const rows=preCurrentRows(), opts=preReadOptions();
+  const summary=preComputeSummary(rows,opts);
+  preRenderHeader(rows);
+  preRenderCards(summary);
+  preRenderSummary(summary);
+  preRenderStages(preSegmentStages(rows).map(s=>preComputeStage(s,opts.refs.vt)));
+  preRenderTable(rows);
+}
+
+function preVerdictColor(pass){ return pass===null?'':(pass?'var(--success)':'var(--warn)'); }
+
+// Tarjeta = última respiración (grande); línea inferior = media de la ventana. Si la respiración
+// actual no trae dato, el valor queda atenuado con su antigüedad: antes se veía igual que uno
+// vigente y la fila correspondiente salía vacía (prueba 2026-10-21).
+function preRenderCards(summary){
+  summary.forEach(s=>{
+    const v=document.getElementById('pre-c-'+s.k), u=document.getElementById('pre-cu-'+s.k);
+    if(!v||!u)return;
+    const stale=s.lastAge!==null&&s.lastAge>0;
+    v.textContent=preFmt(s.last,s.dec);
+    v.style.color=preVerdictColor(s.pass);
+    v.style.opacity=stale?'0.45':'';
+    v.title=s.last===null?'Sin dato en las respiraciones registradas'
+      :(stale?'Valor de hace '+s.lastAge+' respiraciones: la actual no trae dato':'Última respiración');
+    u.textContent=s.unit+(stale?' · hace '+s.lastAge+' resp.':(s.mean===null?'':' · x̄ '+preFmt(s.mean,s.dec)));
+  });
+}
+
+function preRenderHeader(rows){
+  const set=(id,txt)=>{ const el=document.getElementById(id); if(el)el.textContent=txt; };
+  set('pre-device',PRE.device?('VO2-'+PRE.device):(PRE.board?('VO2-'+PRE.board):'--'));
+  set('pre-dpfs',PRE.dpFs>0?(PRE.dpFs+' Pa'):'sin consultar');
+  set('pre-count',rows.length+' (sesión '+PRE.session+')');
+  const gas=preFrcAssess(PRE.frc), el=document.getElementById('pre-gas');
+  if(el){ el.textContent=gas.text; el.style.color=gas.ok===null?'':(gas.ok?'var(--success)':'var(--warn)'); }
+}
+
+// VT de la etapa sin saturadas; si TODAS saturaron, el de todas con ⚠ (es lo que se vio en
+// pantalla, pero recortado: no entra en el criterio ±3 %).
+function preStageVtCell(s){
+  if(s.vt.mean!==null)return preFmt(s.vt.mean,3);
+  return s.vtAll.mean!==null?preFmt(s.vtAll.mean,3)+' ⚠':'--';
+}
+
+function preRenderStages(stages){
+  const body=document.getElementById('pre-stages');
+  if(!body)return;
+  if(!stages.length){
+    body.innerHTML='<tr class="log-empty"><td colspan="10">Sin etapas: hacen falta ≥ '+PRE_STAGE_MIN_N+' respiraciones a FR estable</td></tr>';
+    return;
+  }
+  body.innerHTML=stages.map((s,i)=>{
+    const col=preVerdictColor(s.pass);
+    return '<tr><td>'+(i+1)+'</td><td>'+s.t0.toFixed(0)+'–'+s.t1.toFixed(0)+'</td><td>'+preFmt(s.fr,1)+'</td>'
+      +'<td>'+s.n+(s.nSat?' ('+s.nSat+' ⚠)':'')+'</td><td>'+preStageVtCell(s)+'</td><td>'+preFmt(s.vt.cv,1)+'</td>'
+      +'<td style="'+(col?'color:'+col:'')+'">'+preSignedPct(s.dPct)+'</td>'
+      +'<td>'+preFmt(s.o2,2)+'</td><td>'+preFmt(s.co2,2)+'</td><td>'+preFmt(s.co2sd,2)+'</td></tr>';
+  }).join('');
+}
+
+function preRenderSummary(summary){
+  const body=document.getElementById('pre-summary');
+  if(!body)return;
+  body.innerHTML=summary.map(s=>{
+    const col=preVerdictColor(s.pass);
+    return '<tr><td><b>'+s.lbl+'</b></td><td>'+s.unit+'</td><td>'+preFmt(s.mean,s.dec)+'</td>'
+      +'<td>'+preFmt(s.sd,s.dec)+'</td><td>'+preFmt(s.cv,1)+'</td><td>'+preFmt(s.ref,s.dec)+'</td>'
+      +'<td style="'+(col?'color:'+col:'')+'">'+preSignedPct(s.dPct)+'</td><td>'+s.n+'</td></tr>';
+  }).join('');
+}
+
+function preSignedPct(p){ return p===null?'--':(p>0?'+':'')+p.toFixed(1); }
+
+// Origen de cada celda: 'fw' / 'win' = dato directo; cualquier otro = estimación marcada con *.
+const PRE_SRC_KEY={ve:'ve', fr:'fr', feo2:'fe', feco2:'fe', fio2:'fi', fico2:'fi', co2sd:'sd'};
+const PRE_SRC_TXT={'sensor-esp':'gas del sensor con ΔP espiratorio (el equipo no publicó Fe)',
+  'sensor':'gas del sensor, todas las lecturas (el equipo no publicó Fe)',
+  'ultima':'última lectura del sensor (respiración < 1 s, sin lecturas propias)',
+  '5 lect.':'DE de las últimas 5 lecturas (respiración con < 2 lecturas)',
+  'Δt':'FR estimada como 60 / tiempo desde la respiración anterior', 'VT×FR':'VE estimada como VT × FR'};
+function preSrcOf(r,key){ const k=PRE_SRC_KEY[key]; return (r.src&&k)?r.src[k]:'fw'; }
+function preIsDerived(src){ return !!src&&src!=='fw'&&src!=='win'; }
+
+function preCellHtml(r,key,dec){
+  const src=preSrcOf(r,key), der=preIsDerived(src);
+  return '<td'+(der?' title="'+(PRE_SRC_TXT[src]||src)+'" style="font-style:italic;"':'')+'>'
+    +preFmt(r[key],dec)+(der?'<sup style="color:var(--warn);">*</sup>':'')+'</td>';
+}
+
+function preDpCell(r){
+  return r.dpSat?'<td title="ΔP en fondo de escala: VT recortado" style="color:var(--warn);">⚠ sat</td>'
+                :'<td title="Sin saturación de ΔP">OK</td>';
+}
+
+function preRenderTable(rows){
+  const body=document.getElementById('pre-body');
+  if(!body)return;
+  if(!rows.length){
+    body.innerHTML='<tr class="log-empty"><td colspan="12">Sin respiraciones — conecta el equipo y embola la jeringa</td></tr>';
+    return;
+  }
+  body.innerHTML=rows.slice(-PRE_TABLE_ROWS).reverse().map(r=>
+    '<tr><td>'+r.seq+'</td><td>'+r.t_s.toFixed(1)+'</td><td>'+r.hora+'</td>'
+    +preCellHtml(r,'ve',1)+'<td>'+preFmt(r.vt,3)+'</td>'+preCellHtml(r,'fr',1)
+    +preCellHtml(r,'feo2',2)+preCellHtml(r,'fio2',2)+preCellHtml(r,'feco2',2)+preCellHtml(r,'fico2',2)
+    +preCellHtml(r,'co2sd',2)+preDpCell(r)+'</tr>'
+  ).join('');
+}
+
+// ── Exportación ───────────────────────────────────────────────────────────────
+function preCsvText(){
+  const csvNum=(v,dec)=>(v===null||!isFinite(v))?'':v.toFixed(dec);
+  const head='sesion,seq,t_s,hora,VE_L_min_ATPS,VT_L_ATPS,FR_min,FeO2_pct,FiO2_pct_mediana,FeCO2_pct,'
+    +'FiCO2_pct_mediana,CO2_DE_pct,n_gas,dP_saturado,origen_VE,origen_FR,origen_Fe,origen_Fi,origen_DE';
+  const s=(r,k)=>(r.src&&r.src[k])||'fw';
+  const meta='# equipo='+(PRE.device||PRE.board||'?')+' ; dP_fondo_escala_Pa='+(PRE.dpFs||'?')
+    +' ; K='+(PRE.k||'?')+' ; gas: '+preFrcAssess(PRE.frc).text.replace(/,/g,';')
+    +' ; exportado='+new Date().toISOString();
+  const lines=PRE.rows.map(r=>[r.ses,r.seq,r.t_s.toFixed(1),r.hora,csvNum(r.ve,1),csvNum(r.vt,3),csvNum(r.fr,1),
+    csvNum(r.feo2,2),csvNum(r.fio2,2),csvNum(r.feco2,2),csvNum(r.fico2,2),csvNum(r.co2sd,3),r.nGas,
+    r.dpSat?1:0,s(r,'ve'),s(r,'fr'),s(r,'fe'),s(r,'fi'),s(r,'sd')].join(','));
+  return [meta,head].concat(lines).join('\n');
+}
+
+function preExportCSV(){
+  if(!PRE.rows.length){ toast('Sin respiraciones registradas','warning'); return; }
+  const blob=new Blob([preCsvText()],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  a.href=URL.createObjectURL(blob);
+  a.download='prebiologica_'+(PRE.device||PRE.board||'equipo')+'_'+stamp+'.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+// ── Informe (PDF por el diálogo de impresión del navegador) ──────────────────
+// Mismo criterio que los informes de calibración: ventana propia + window.print(), sin
+// librería de PDF por CDN (el laboratorio trabaja sin red). Sale del laboratorio:
+// sin nombres de fabricante ni modelos de sensores (NDA).
+const PRE_REPORT_CSS='body{font:12px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:26px}'
+  +'h1{font-size:17px;margin:0 0 4px}h2{font-size:13px;margin:18px 0 6px;border-bottom:1px solid #999}'
+  +'table{border-collapse:collapse;width:100%;margin:4px 0}th,td{border:1px solid #bbb;padding:3px 6px;text-align:center}'
+  +'th{background:#eee}table.meta th{text-align:left;width:32%}table.meta td{text-align:left}'
+  +'.ok{color:#0a7a2f;font-weight:700}.ko{color:#b45309;font-weight:700}.note{font-size:10.5px;color:#444}'
+  +'.foot{margin-top:22px;font-size:10px;color:#666;border-top:1px solid #ccc;padding-top:6px}';
+
+function preEsc(v){
+  return String(v===null||v===undefined||v===''?'—':v)
+    .replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function preReadReportMeta(){
+  const val=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
+  // Sin operador escrito, el informe toma el evaluador de la ficha de USUARIO (u-evaluator).
+  return {tipo:val('pre-rep-tipo'), operador:val('pre-rep-op')||val('u-evaluator'), obs:val('pre-rep-obs')};
+}
+
+function preReportHeaderHtml(meta,opts,nUsed){
+  const amb=PRE.amb;
+  const rows=[
+    ['Fecha y hora', new Date().toLocaleString()],
+    ['Tipo de prueba', meta.tipo], ['Operador', meta.operador],
+    ['Equipo', PRE.device?('VO2-'+PRE.device):(PRE.board?('VO2-'+PRE.board):'')],
+    ['Firmware', PRE.fw], ['K de flujo', PRE.k>0?PRE.k.toFixed(3):''],
+    ['Fondo de escala ΔP', PRE.dpFs>0?PRE.dpFs+' Pa':'sin consultar'],
+    ['Calibración de gas', preFrcAssess(PRE.frc).text],
+    ['Sesión', String(PRE.session)],
+    ['Ambiente', (amb.tempC!==null?amb.tempC.toFixed(1)+' °C':'—')+' · '
+                 +(amb.presPa!==null?(amb.presPa/100).toFixed(0)+' hPa':'—')],
+    ['Ventana analizada', (opts.lastN>0?'últimas '+opts.lastN:'todas')+' respiraciones · n = '+nUsed
+                 +(opts.exclSat?' · excluidos ciclos con ΔP saturado':'')],
+  ];
+  return '<h1>Informe de evaluación prebiológica</h1><table class="meta">'
+    +rows.map(r=>'<tr><th>'+preEsc(r[0])+'</th><td>'+preEsc(r[1])+'</td></tr>').join('')+'</table>';
+}
+
+function preReportSummaryHtml(summary){
+  const verdict=s=>s.pass===null?'—':(s.pass?'<span class="ok">Cumple ±'+s.tolPct+' %</span>'
+                                              :'<span class="ko">Fuera de ±'+s.tolPct+' %</span>');
+  return '<h2>Resultados</h2><table><tr><th>Variable</th><th>Unidad</th><th>Media</th><th>DE</th><th>CV %</th>'
+    +'<th>Referencia</th><th>Δ</th><th>Δ %</th><th>n</th><th>Criterio</th></tr>'
+    +summary.map(s=>'<tr><td><b>'+s.lbl+'</b></td><td>'+s.unit+'</td><td>'+preFmt(s.mean,s.dec)+'</td>'
+      +'<td>'+preFmt(s.sd,s.dec)+'</td><td>'+preFmt(s.cv,1)+'</td><td>'+preFmt(s.ref,s.dec)+'</td>'
+      +'<td>'+preFmt(s.dAbs,s.dec)+'</td><td>'+preSignedPct(s.dPct)+'</td><td>'+s.n+'</td><td>'+verdict(s)+'</td></tr>').join('')
+    +'</table>';
+}
+
+function preReportStagesHtml(stages){
+  if(!stages.length)return '';
+  const verdict=s=>s.pass===null?'—':(s.pass?'<span class="ok">Cumple ±'+PRE_VT_TOL_PCT+' %</span>'
+                                            :'<span class="ko">Fuera de ±'+PRE_VT_TOL_PCT+' %</span>');
+  return '<h2>Resultados por etapa (FR estable)</h2><table><tr><th>Etapa</th><th>t (s)</th><th>FR</th><th>n (sat.)</th>'
+    +'<th>VT sin sat.</th><th>VT todas</th><th>CV %</th><th>Δ % VT</th><th>Criterio VT</th><th>O₂ sensor</th><th>CO₂ sensor</th><th>DE CO₂</th></tr>'
+    +stages.map((s,i)=>'<tr><td>'+(i+1)+'</td><td>'+s.t0.toFixed(0)+'–'+s.t1.toFixed(0)+'</td><td>'+preFmt(s.fr,1)+'</td>'
+      +'<td>'+s.n+(s.nSat?' ('+s.nSat+')':'')+'</td><td>'+preFmt(s.vt.mean,3)+'</td>'
+      +'<td>'+preFmt(s.vtAll.mean,3)+(s.nSat?' ⚠':'')+'</td><td>'+preFmt(s.vt.cv,1)+'</td>'
+      +'<td>'+preSignedPct(s.dPct)+'</td><td>'+verdict(s)+'</td><td>'+preFmt(s.o2,2)+'</td><td>'+preFmt(s.co2,2)+'</td>'
+      +'<td>'+preFmt(s.co2sd,2)+'</td></tr>').join('')
+    +'</table><p class="note">VT sin sat.: media sin las respiraciones con ΔP en fondo de escala (entra en el criterio). '
+    +'VT todas: incluye las saturadas (⚠ = recortado, no entra en el criterio). '
+    +'O₂/CO₂ sensor = media de las medianas por respiración.</p>';
+}
+
+// Lo mismo que muestran las tarjetas al generar el informe: último valor, antigüedad y media.
+function preReportSnapshotHtml(summary){
+  return '<h2>Lectura en pantalla al generar el informe</h2><table><tr><th>Variable</th><th>Unidad</th>'
+    +'<th>Último valor</th><th>Antigüedad</th><th>Media (ventana)</th></tr>'
+    +summary.map(s=>'<tr><td><b>'+s.lbl+'</b></td><td>'+s.unit+'</td><td>'+preFmt(s.last,s.dec)+'</td>'
+      +'<td>'+(s.lastAge===null?'—':(s.lastAge===0?'respiración actual':'hace '+s.lastAge+' resp.'))+'</td>'
+      +'<td>'+preFmt(s.mean,s.dec)+'</td></tr>').join('')
+    +'</table>';
+}
+
+function preReportBreathsHtml(rows){
+  return '<h2>Respiraciones analizadas</h2><table><tr><th>#</th><th>t (s)</th><th>VE</th><th>VT</th><th>FR</th>'
+    +'<th>FeO₂</th><th>FiO₂</th><th>FeCO₂</th><th>FiCO₂</th><th>DE CO₂</th><th>ΔP</th></tr>'
+    +rows.map(r=>'<tr><td>'+r.seq+'</td><td>'+r.t_s.toFixed(1)+'</td>'+preCellHtml(r,'ve',1)+'<td>'+preFmt(r.vt,3)+'</td>'
+      +preCellHtml(r,'fr',1)+preCellHtml(r,'feo2',2)+preCellHtml(r,'fio2',2)
+      +preCellHtml(r,'feco2',2)+preCellHtml(r,'fico2',2)+preCellHtml(r,'co2sd',2)
+      +'<td>'+(r.dpSat?'saturado':'OK')+'</td></tr>').join('')
+    +'</table><p class="note">* = estimación marcada (el equipo no publicó ese dato en la respiración): '
+    +'Fe → gas del sensor con ΔP espiratorio; Fi → última lectura; DE → últimas 5 lecturas; '
+    +'FR → 60/Δt entre respiraciones; VE → VT × FR. El origen de cada celda va en el CSV.</p>';
+}
+
+const PRE_REPORT_NOTES='<p class="note">VE y VT en ATPS, tal como los mide el equipo (sin conversión a BTPS). '
+  +'FeO₂/FeCO₂: fracción espirada ponderada por flujo del equipo; «—» = el equipo no publicó una fracción espirada '
+  +'válida (con el mismo gas en inspiración y espiración la calcula y la rechaza por diseño). '
+  +'FiO₂/FiCO₂: mediana de las lecturas instantáneas (1 Hz) entre respiraciones; con gas constante equivale al gas '
+  +'en el sensor. DE CO₂: dispersión de esas lecturas, indicador de ruido del canal. '
+  +'Criterio de VT: ±'+PRE_VT_TOL_PCT+' % frente al volumen de la jeringa (ATS/ERS 2019); el resto de las variables '
+  +'se informa sin veredicto. VO₂ y VCO₂ no se informan: con el mismo gas en inspiración y espiración no son calculables.</p>';
+
+function preBuildReportHtml(){
+  const opts=preReadOptions(), rows=preCurrentRows();
+  const summary=preComputeSummary(rows,opts);
+  const stages=preSegmentStages(rows).map(s=>preComputeStage(s,opts.refs.vt));
+  const sel=opts.exclSat?rows.filter(r=>!r.dpSat):rows;
+  const used=opts.lastN>0?sel.slice(-opts.lastN):sel;
+  const meta=preReadReportMeta();
+  // El detalle lleva TODAS las respiraciones de la sesión: antes solo las de la ventana del
+  // resumen, y una prueba corta a varias velocidades quedaba sin sus etapas saturadas.
+  return preReportHeaderHtml(meta,opts,used.length)+preReportSnapshotHtml(summary)
+    +preReportSummaryHtml(summary)+preReportStagesHtml(stages)
+    +(meta.obs?'<h2>Observaciones</h2><p>'+preEsc(meta.obs)+'</p>':'')
+    +PRE_REPORT_NOTES+preReportBreathsHtml(rows)
+    +'<div class="foot">ActionSmart Research Lab · VO2 Smart CURVO PRO · Patente CL 2024024875 · '
+    +'Verificación prebiológica del instrumento; no es un informe clínico.</div>';
+}
+
+function preReportOpen(){
+  if(!preCurrentRows().length){ toast('Sin respiraciones registradas para el informe','warning'); return; }
+  const body=preBuildReportHtml();
+  const w=window.open('','_blank');
+  if(!w){ preReportDownloadHtml(body); return; }   // emergentes bloqueadas → archivo
+  w.document.open(); w.document.write(''); w.document.close();
+  w.document.title='Informe prebiológico';
+  const css=w.document.createElement('style'); css.textContent=PRE_REPORT_CSS;
+  w.document.head.append(css);
+  w.document.body.innerHTML=body;
+  w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(_e){} },350);
+}
+
+function preReportDownloadHtml(body){
+  const html='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe prebiológico</title>'
+    // Etiquetas de cierre partidas ('<'+'/body>'): la etiqueta de cierre de body escrita
+    // literal, aunque sea en un string o un comentario de JS, es donde Live Server inyecta su
+    // script de recarga → rompe este bloque y doLogin() desaparece (incidente 2026-10-21,
+    // 127.0.0.1:5501). Misma convención que el resto del archivo.
+    +'<style>'+PRE_REPORT_CSS+'<'+'/style><'+'/head><body>'+body+'<'+'/body><'+'/html>';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download='informe_prebiologico_'+(PRE.device||PRE.board||'equipo')+'_'
+    +new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.html';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  toast('Ventana bloqueada: informe descargado como HTML (ábrelo e imprime a PDF)','info');
+}
+
 console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (audit: OUES-SSOT, HB-init, printCalo-cleanup, VT-SSOT, pred-section-removed, ia-panel-added)');
 (function(){
   document.addEventListener('DOMContentLoaded',function(){
@@ -15314,7 +16499,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           <div class="brand-name"><span style="color:#70d4e9;">Vo₂</span><span style="color:#d52b1e;">SMART</span></div>
         </div>
         <div class="brand-badge" style="border-color:rgba(213,43,30,0.4);background:rgba(213,43,30,0.1);color:#c62828;">v5.0 PRO · Pat. CL 2024024875</div>
-        <!-- Banderas nacionales + Sensirion -->
+        <!-- Banderas nacionales + el fabricante -->
         <div class="topbar-nation">
           <div class="tb-flag-cl" title="Hecho en Chile">
             <div class="tb-flag-cl-top">
@@ -15323,11 +16508,8 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
             </div>
             <div class="tb-flag-cl-red"></div>
           </div>
-          <div class="tb-flag-ch" title="Tecnología Suiza · Sensirion AG">
+          <div class="tb-flag-ch" title="Tecnología Suiza">
             <div class="tb-flag-ch-cross"></div>
-          </div>
-          <div class="sensirion-badge" title="Sensirion AG · Swiss Sensor Innovation · SBN41 + SDP810">
-            <div class="sensirion-dot"></div>sensirion
           </div>
         </div>
       </div>
@@ -15364,7 +16546,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                      margin-right:4px;cursor:pointer;font-weight:600;"
               onclick="syncManager.cancel()"
               title="Sync offline en curso — click para cancelar">&#x27F3; Sync</span>
-        <div class="batt-pill" id="topbar-batt-pill" title="Batería dispositivo">
+        <div class="batt-pill" id="topbar-batt-pill" title="Batería dispositivo" onclick="openBattOverlay(false)">
           <svg id="topbar-batt-svg" width="22" height="12" viewBox="0 0 22 12" fill="none" style="color:inherit;flex-shrink:0;">
             <rect x="0.75" y="0.75" width="18" height="10.5" rx="2" stroke="currentColor" stroke-width="1.5"/>
             <rect x="19" y="4" width="2.5" height="4" rx="1" fill="currentColor"/>
@@ -15404,6 +16586,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <div class="nav-label" data-i18n="nav_data">Datos</div>
         <button class="nav-item" draggable="true" data-page="usuario" onclick="goPage('usuario',this)"><span class="icon">👤</span><span data-i18n="nav_user">USUARIO</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="registro" onclick="goPage('registro',this)"><span class="icon">📋</span><span data-i18n="nav_log">Registro</span> <span class="nav-badge" id="reg-badge">0</span><span class="drag-handle">⋮⋮</span></button>
+        <button class="nav-item" draggable="true" data-page="prebio" onclick="goPage('prebio',this)"><span class="icon">🧪</span><span>Prebiológica</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="calibracion" onclick="goPage('calibracion',this)"><span class="icon">🔬</span><span data-i18n="nav_calibration">Calibración</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="diagnostico" onclick="goPage('diagnostico',this)"><span class="icon">🔧</span><span data-i18n="nav_diagnostics">Diagnóstico</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="informe" onclick="goPage('informe',this)"><span class="icon">📄</span><span data-i18n="nav_report">Informe</span><span class="drag-handle">⋮⋮</span></button>
@@ -15426,11 +16609,10 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           </div>
           <span style="font-size:.7rem;color:#9ca3af;">×</span>
           <!-- Mini bandera Suiza -->
-          <div class="flag-mini-ch" title="Tecnología Suiza · Sensirion AG" style="width:23px;height:23px;">
+          <div class="flag-mini-ch" title="Tecnología Suiza" style="width:23px;height:23px;">
             <div class="flag-mini-ch-cross" style="width:11px;height:11px;"></div>
           </div>
         </div>
-        <div class="sb-sensirion"><div class="sb-sensirion-dot"></div>sensirion</div>
         <div class="sidebar-credit">Hecho en Chile · Tecnología Suiza<br>ActionSmart® · Pat. CL 2024024875</div>
       </div>
     </aside>
@@ -15444,7 +16626,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <div class="notice" id="dash-notice" data-i18n="dash_notice">Sin equipo conectado. Presiona "VO₂Smart BLE" en la barra superior, conecta el receptor ESP-NOW (panel Gateway) o activa el modo Demo.</div>
 
         <!-- M-8: banner de FALLA de sensor — campo "s" del stream 1 Hz (main.cpp:3160).
-             bit0 canal O₂ muerto · bit3 SDP810 stale · bit4 tramas SDP con CRC malo.
+             bit0 canal O₂ muerto · bit3 sensor de flujo stale · bit4 tramas ΔP con CRC malo.
              El campo solo se emite cuando hay falla activa → banner oculto en operación sana. -->
         <div id="gas-fault-banner" style="display:none;margin-bottom:12px;padding:10px 14px;
              background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.45);
@@ -15621,11 +16803,11 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <!-- SECONDARY METRICS -->
         <div class="metrics-grid">
           <div class="metric-mini"><div class="mm-label" data-i18n="mm_ve">VE</div><div class="mm-value" id="d-ve">--</div><div class="mm-unit">L/min</div></div>
-          <!-- M-1: la etiqueta nombra la fuente REAL del RER mostrado (BxB / SBN41 /
-               Haldane). Fija decía "Live-RER SBN41" incluso cuando el valor venía del
-               cálculo breath-integrated — SEK Guide §4.3 exige distinguirlos. -->
+          <!-- M-1: la etiqueta nombra la fuente REAL del RER mostrado (BxB / sensor de gas /
+               Haldane). Fija decía "Live-RER sensor de gas" incluso cuando el valor venía del
+               cálculo breath-integrated — guía del fabricante §4.3 exige distinguirlos. -->
           <!-- d-rer-sub: procedencia del RER mostrado, y cuando vale '--', la causa
-               concreta (centinela 0x7FFF del SBN41 vs canal de gas caído). Dos rutas
+               concreta (centinela 0x7FFF del sensor de gas vs canal de gas caído). Dos rutas
                ya escribían este id desde 2026-07 sin que el elemento existiera en el
                DOM, así que el motivo del '--' nunca llegaba a pantalla. -->
           <div class="metric-mini"><div class="mm-label" id="d-rer-label">RER breath-by-breath</div><div class="mm-value" id="d-rer">--</div><div class="mm-unit" id="d-rer-sub" style="font-size:0.62rem;line-height:1.25;text-transform:none;letter-spacing:0;"></div></div>
@@ -15633,12 +16815,12 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           <div class="metric-mini"><div class="mm-label">VE/VO₂</div><div class="mm-value" id="d-vevo2">--</div></div>
           <div class="metric-mini"><div class="mm-label">VE/VCO₂</div><div class="mm-value" id="d-vevco2">--</div></div>
           <div class="metric-mini"><div class="mm-label">Vol. Tidal</div><div class="mm-value" id="d-vol">--</div><div class="mm-unit">L</div></div>
-          <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06 (ventana espiratoria ponderada por flujo). Es la que entra en el cálculo de VO₂ — no coincide con el O₂ instantáneo del panel SBN41, que barre ambiente al inhalar."><div class="mm-label">FeO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feo2">--</div><div class="mm-unit">%</div></div>
-          <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06. No coincide con el CO₂ instantáneo del panel SBN41."><div class="mm-label">FeCO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feco2">--</div><div class="mm-unit">%</div></div>
+          <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06 (ventana espiratoria ponderada por flujo). Es la que entra en el cálculo de VO₂ — no coincide con el O₂ instantáneo del panel sensor de gas, que barre ambiente al inhalar."><div class="mm-label">FeO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feo2">--</div><div class="mm-unit">%</div></div>
+          <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06. No coincide con el CO₂ instantáneo del panel sensor de gas."><div class="mm-label">FeCO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feco2">--</div><div class="mm-unit">%</div></div>
           <div class="metric-mini"><div class="mm-label">PetO₂</div><div class="mm-value" id="d-peto2">--</div><div class="mm-unit">mmHg</div></div>
           <div class="metric-mini"><div class="mm-label">PetCO₂</div><div class="mm-value" id="d-petco2">--</div><div class="mm-unit">mmHg</div></div>
           <div class="metric-mini"><div class="mm-label">Temp.</div><div class="mm-value" id="d-temp">--</div><div class="mm-unit">°C</div></div>
-          <div class="metric-mini"><div class="mm-label" data-i18n="mm_battery">Batería</div><div class="mm-value" id="d-bat">--</div><div class="mm-unit">%</div></div>
+          <div class="metric-mini" id="d-bat-card" onclick="openBattOverlay(false)"><div class="mm-label" data-i18n="mm_battery">Batería</div><div class="mm-value" id="d-bat">--</div><div class="mm-unit" id="d-bat-unit">%</div></div>
           <div class="metric-mini"><div class="mm-label" data-i18n="mm_caltotal">kcal Total</div><div class="mm-value" id="d-cal-total">--</div><div class="mm-unit">kcal</div></div>
           <div class="metric-mini"><div class="mm-label" data-i18n="mm_time">Tiempo</div><div class="mm-value" id="d-elapsed" style="font-size:1rem;">--:--</div></div>
           <div class="metric-mini" style="border-left:2px solid rgba(239,68,68,0.4);">
@@ -15648,26 +16830,26 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           </div>
         </div>
 
-        <!-- PANEL SENSOR EN TIEMPO REAL — SBN41 + SDP810 -->
+        <!-- PANEL SENSOR EN TIEMPO REAL — sensor de gas + sensor de flujo -->
         <div id="sbn-live-panel" style="margin-bottom:14px;padding:13px 15px;background:rgba(0,56,168,0.06);border:1px solid rgba(0,56,168,0.2);border-radius:10px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
             <span id="sbn-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;transition:background 0.4s;"></span>
-            <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;color:var(--muted2);text-transform:uppercase;">SBN41 · Gas en Tiempo Real</span>
-            <span style="margin-left:6px;font-size:0.68rem;color:var(--muted);font-style:italic;">RER = BxB (Ec.29) → SBN41 (Ec.30) → Haldane</span>
+            <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;color:var(--muted2);text-transform:uppercase;">sensor de gas · Gas en Tiempo Real</span>
+            <span style="margin-left:6px;font-size:0.68rem;color:var(--muted);font-style:italic;">RER = BxB (Ec.29) → sensor de gas (Ec.30) → Haldane</span>
             <span style="margin-left:auto;font-size:0.68rem;color:var(--muted);" id="sbn-last-ts">--</span>
           </div>
 
-          <!-- Gases SBN41 -->
+          <!-- Gases sensor de gas -->
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px;">
             <div style="text-align:center;padding:8px 4px;background:rgba(79,195,247,0.07);border-radius:8px;">
               <div style="font-size:0.64rem;color:var(--muted);margin-bottom:3px;" title="Lectura instantánea del sensor: durante la inhalación barre aire ambiente, por eso tiende a 20.95. NO es la fracción espirada — esa es el tile FeO₂ de arriba.">O₂ instantáneo</div>
               <div style="font-size:1.6rem;font-weight:700;color:#4fc3f7;line-height:1;" id="d-sbn-o2">--</div>
-              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">%  ·  SBN41 crudo</div>
+              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">%  ·  sensor de gas crudo</div>
             </div>
             <div style="text-align:center;padding:8px 4px;background:rgba(255,183,77,0.07);border-radius:8px;">
               <div style="font-size:0.64rem;color:var(--muted);margin-bottom:3px;" title="Lectura instantánea del sensor. NO es la fracción espirada — esa es el tile FeCO₂ de arriba.">CO₂ instantáneo</div>
               <div style="font-size:1.6rem;font-weight:700;color:#ffb74d;line-height:1;" id="d-sbn-co2">--</div>
-              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">%  ·  SBN41 crudo</div>
+              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">%  ·  sensor de gas crudo</div>
             </div>
             <div style="text-align:center;padding:8px 4px;background:rgba(174,213,129,0.07);border-radius:8px;">
               <div style="font-size:0.64rem;color:var(--muted);margin-bottom:3px;" id="d-sbn-rer-label">RER BxB</div>
@@ -15677,31 +16859,31 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
             <div style="text-align:center;padding:8px 4px;background:rgba(20,30,50,0.04);border-radius:8px;">
               <div style="font-size:0.64rem;color:#6e6e73;margin-bottom:3px;">Presión</div>
               <div style="font-size:1.6rem;font-weight:700;color:#1e293b;line-height:1;" id="d-sbn-pres">--</div>
-              <div style="font-size:0.62rem;color:#6e6e73;margin-top:2px;">hPa  ·  SBN41</div>
+              <div style="font-size:0.62rem;color:#6e6e73;margin-top:2px;">hPa  ·  sensor de gas</div>
             </div>
             <div style="text-align:center;padding:8px 4px;background:rgba(128,203,196,0.07);border-radius:8px;">
               <div style="font-size:0.64rem;color:var(--muted);margin-bottom:3px;">Temperatura</div>
               <div style="font-size:1.6rem;font-weight:700;color:#80cbc4;line-height:1;" id="d-sdp-temp">--</div>
-              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;" id="lbl-sdp-temp">°C  ·  SDP810</div>
+              <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;" id="lbl-sdp-temp">°C  ·  sensor de flujo</div>
             </div>
           </div>
 
-          <!-- Flujo + derivados SBN41×SDP810 -->
+          <!-- Flujo + derivados sensor de gas×sensor de flujo -->
           <div style="padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
             <div style="font-size:0.72rem;color:var(--muted2);">
-              <span style="color:var(--muted);font-size:0.64rem;" id="lbl-sdp-dp">ΔP SDP810 raw</span><br>
+              <span style="color:var(--muted);font-size:0.64rem;" id="lbl-sdp-dp">ΔP sensor de flujo raw</span><br>
               <strong style="font-size:1.1rem;color:#ce93d8;" id="d-sdp-dp">--</strong> <span style="font-size:0.65rem;">Pa</span>
             </div>
             <div style="font-size:0.72rem;color:var(--muted2);">
-              <span style="color:#6e6e73;font-size:0.64rem;" id="lbl-sdp-ve">VE  SDP810+Venturi</span><br>
+              <span style="color:#6e6e73;font-size:0.64rem;" id="lbl-sdp-ve">VE  sensor de flujo+Venturi</span><br>
               <strong style="font-size:1.1rem;color:#1e293b;" id="d-sbn-ve">--</strong> <span style="font-size:0.65rem;color:#6e6e73;">L/min</span>
             </div>
             <div style="font-size:0.72rem;color:var(--muted2);">
-              <span style="color:var(--muted);font-size:0.64rem;">VO₂ actual  Haldane+SDP</span><br>
+              <span style="color:var(--muted);font-size:0.64rem;">VO₂ actual  Haldane+ΔP</span><br>
               <strong style="font-size:1.1rem;color:#69f0ae;" id="d-sbn-vo2">--</strong> <span style="font-size:0.65rem;">mL/kg/min</span>
             </div>
             <div style="font-size:0.72rem;color:var(--muted2);">
-              <span style="color:var(--muted);font-size:0.64rem;">VCO₂ actual  Haldane+SDP</span><br>
+              <span style="color:var(--muted);font-size:0.64rem;">VCO₂ actual  Haldane+ΔP</span><br>
               <strong style="font-size:1.1rem;color:#ff8a65;" id="d-sbn-vco2">--</strong> <span style="font-size:0.65rem;">mL/kg/min</span>
             </div>
             <div style="font-size:0.72rem;color:var(--muted2);">
@@ -16662,7 +17844,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <!-- ═══ EVALUADOR ═══ -->
         <div class="section-header" style="margin-top:20px;">🩺 Datos del Evaluador</div>
         <div class="form-grid">
-          <div class="form-group"><label class="form-label">Nombre del Evaluador</label><input class="form-input" type="text" id="u-evaluator" placeholder="Dr.Mg. Claudio Abarca"></div>
+          <div class="form-group"><label class="form-label">Nombre del Evaluador</label><input class="form-input" type="text" id="u-evaluator" placeholder="PhD, MSc Claudio Abarca Vargas"></div>
           <div class="form-group"><label class="form-label">Rut / Codigo</label><input class="form-input" type="text" id="u-eval-license" placeholder="RUT 12345"></div>
           <div class="form-group"><label class="form-label">Institución / Centro</label><input class="form-input" type="text" id="u-eval-institution" placeholder="Centro Alto Rendimiento"></div>
           <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" type="text" id="u-eval-specialty" placeholder="Innovación Deportiva"></div>
@@ -16721,11 +17903,37 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
              archivado deben verse distinto. Antes los tres eran indistinguibles. -->
         <div id="sync-backlog-info"
              style="padding:4px 2px 8px;font-size:0.72rem;color:var(--muted);font-family:var(--mono);"></div>
+        <!-- [STOR-2026-10-19] Almacenamiento del equipo: crudo 50 Hz (raw.bin) y sesión
+             offline (session.bin). Sincronizar NO borra raw.bin: sin este panel el flash
+             se llenaba en silencio (FDC620 2026-10-19: fs_free_kb 0, 632 muestras
+             descartadas) y el único borrado estaba escondido en el asistente de
+             calibración. Nada se borra solo: cada borrado pide confirmación. -->
+        <div id="stor-panel" style="background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;margin:0 0 10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <div style="font-size:0.78rem;font-weight:800;color:var(--text);">💾 Almacenamiento del equipo</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-ghost btn-sm" onclick="storRefresh(false)"
+                      title="Consultar RAW_STATUS al equipo">↻ Actualizar</button>
+              <button class="btn btn-ghost btn-sm" onclick="storRawWifi()"
+                      title="Levanta la red WiFi del equipo para bajar raw.bin. Corta el BLE y reinicia el equipo al salir">⬇ Descargar crudo (WiFi)</button>
+              <button class="btn btn-warn btn-sm" onclick="storClearRaw()"
+                      title="Borra raw.bin del equipo (RAW_CLEAR). No se puede deshacer">🗑 Borrar crudo</button>
+              <button class="btn btn-warn btn-sm" onclick="storClearSession()"
+                      title="Borra la sesión offline del equipo (CLEAR_SESSION). Si no consta como sincronizada, pide confirmación extra">🗑 Borrar sesión offline</button>
+            </div>
+          </div>
+          <div style="height:8px;border-radius:4px;background:var(--border2);overflow:hidden;" title="Ocupación de raw.bin sobre su tope">
+            <div id="stor-bar-fill" style="height:100%;width:0%;background:var(--muted);transition:width .3s;"></div>
+          </div>
+          <div id="stor-raw" style="font-size:0.72rem;font-family:var(--mono);color:var(--muted);margin-top:5px;">Crudo 50 Hz: sin consultar — pulsa ↻ Actualizar con el equipo conectado</div>
+          <div id="stor-sess" style="font-size:0.72rem;font-family:var(--mono);color:var(--muted);margin-top:2px;">Sesión offline: sin datos de SYNC_STATUS todavía</div>
+          <div id="stor-wifi" hidden style="font-size:0.74rem;margin-top:6px;padding:6px 8px;border-radius:6px;background:var(--card);border:1px dashed var(--border2);"></div>
+        </div>
         <div class="log-table-wrap">
           <table class="log-table">
             <thead>
               <tr>
-                <th>Hora</th><th>Fase</th><th>VO₂</th><th>VCO₂</th><th title="rer_bxb: RER breath-by-breath (VCO₂/VO₂ integrado). Si RER_Method ≠ bxb_clinical, esa fila usó respaldo SBN41">RER BxB</th>
+                <th>Hora</th><th>Fase</th><th>VO₂</th><th>VCO₂</th><th title="rer_bxb: RER breath-by-breath (VCO₂/VO₂ integrado). Si RER_Method ≠ bxb_clinical, esa fila usó respaldo sensor de gas">RER BxB</th>
                 <th title="media FIFO de 8 respiraciones">VE</th><th title="VE de los mismos frames BxB que produjeron VO2/VCO2 (C-10)">VE BxB</th><th>FR</th><th>VT</th>
                 <th>FC</th><th>EE kcal/min</th><th>Fat%</th><th>CHO%</th>
                 <th>FeO₂%</th><th>FeCO₂%</th><th>Bat%</th><th title="Artifact Flags">Art</th>
@@ -16904,7 +18112,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
 
               <!-- ══ Asistente LAMINAR (LFE) — oculto salvo flow=LAMINAR ══ -->
               <!-- No hay garganta que medir: R = ΔP/Q se caracteriza con jeringa
-                   (Sensirion SDP Engineering Guide §3.2.1 pasos 4-6). K corrige el
+                   (guía de ingeniería del fabricante §3.2.1 pasos 4-6). K corrige el
                    R teórico de config.h, que nunca fue caracterizado en banco. -->
               <div id="cal-block-laminar" style="display:none;">
 
@@ -17533,7 +18741,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
               <input id="gas-val-co2-cert" type="number" min="0" max="10" step="0.01" value="5.00" title="Fracción de CO₂ impresa en el certificado del cilindro" style="width:100%;margin-top:4px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.06);color:var(--text);font:0.76rem var(--mono);">
             </label>
             <label style="font-size:0.66rem;color:var(--muted);">Ar del gas (%)
-              <input id="gas-val-ar" type="number" min="0" max="2" step="0.01" value="0.00" title="Argón de la mezcla. Bal. N₂ sin argón → 0.00. El SBN41 asume 0.93 vol% (DS V0.5 §5.2): la diferencia corrige el CO₂ ESPERADO, nunca la lectura." style="width:100%;margin-top:4px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.06);color:var(--text);font:0.76rem var(--mono);">
+              <input id="gas-val-ar" type="number" min="0" max="2" step="0.01" value="0.00" title="Argón de la mezcla. Bal. N₂ sin argón → 0.00. El sensor de gas asume 0.93 vol% (DS V0.5 §5.2): la diferencia corrige el CO₂ ESPERADO, nunca la lectura." style="width:100%;margin-top:4px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.06);color:var(--text);font:0.76rem var(--mono);">
             </label>
             <label style="font-size:0.66rem;color:var(--muted);">Límite O₂ (pp)
               <input id="gas-val-tol-o2" type="number" min="0.01" max="10" step="0.01" value="0.30" title="±0.2 vol% del datasheet ⊕ incertidumbre del certificado (±1 % rel. sobre 16 % = ±0.16 pp)" style="width:100%;margin-top:4px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:rgba(255,255,255,0.06);color:var(--text);font:0.76rem var(--mono);">
@@ -17574,7 +18782,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           </div>
           <div style="margin-top:10px;padding:8px 10px;border-radius:7px;background:rgba(255,190,11,0.08);border:1px solid rgba(255,190,11,0.2);font-size:0.68rem;color:#8a6500;line-height:1.45;">
             <strong>Alcance:</strong> esta prueba verifica fracciones O₂/CO₂ frente a un valor certificado. No valida flujo, retardo, VE, VO₂ ni VCO₂; tampoco sustituye la calibración ni el mantenimiento del fabricante.<br>
-            <strong>Argón:</strong> el SBN41 asume aire natural con Ar 0.93 vol% (DS V0.5 §5.2). Con un patrón «bal. N₂» el canal de CO₂ lee bajo por composición, no por desajuste. El campo <em>Ar del gas</em> corrige el valor ESPERADO y deja la corrección escrita en el informe; la lectura y las anclas FRC no se tocan.
+            <strong>Argón:</strong> el sensor de gas asume aire natural con Ar 0.93 vol% (DS V0.5 §5.2). Con un patrón «bal. N₂» el canal de CO₂ lee bajo por composición, no por desajuste. El campo <em>Ar del gas</em> corrige el valor ESPERADO y deja la corrección escrita en el informe; la lectura y las anclas FRC no se tocan.
           </div>
           <div id="gas-val-history" style="margin-top:12px;font-size:0.68rem;color:var(--muted);"></div>
         </div>
@@ -17844,7 +19052,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         }
         function _gasValNum(id){ return parseFloat(document.getElementById(id)?.value); }
 
-        // ── Corrección por argón (DS SBN41-resX V0.5 §5.2) ────────────────
+        // ── Corrección por argón (DS del sensor de gas §5.2) ────────────────
         // El principio de medición es sensible a la composición y ASUME aire natural
         // con Ar 0.93 vol%. Los patrones médicos de referencia (COSMED/Airgas
         // A-860-000-004: 5 % CO₂ · 16 % O₂ · bal. N₂) no llevan argón: ese 0.93 %
@@ -17866,14 +19074,14 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         // El canal de O₂ NO se corrige: la misma vía molar predeciría −2.8 pp y se
         // miden +0.19 pp, luego ese canal no comparte el principio dependiente de
         // composición. Corregirlo sería inventar un sesgo que no existe.
-        const GASVAL_AR_REF = 0.93;                            // vol% que asume el SBN41
+        const GASVAL_AR_REF = 0.93;                            // vol% que asume el sensor de gas
         const GASVAL_M = {ar:39.948, n2:28.014, co2:44.010};   // g/mol
         function _gasValArCorr(arPct){
           const ar = Number.isFinite(arPct) ? arPct : GASVAL_AR_REF;
           const dM = (ar - GASVAL_AR_REF)/100 * (GASVAL_M.ar - GASVAL_M.n2);
           return dM / ((GASVAL_M.co2 - GASVAL_M.n2)/100);
         }
-        // Valor que el SBN41 debe leer con ESTE gas concreto.
+        // Valor que el sensor de gas debe leer con ESTE gas concreto.
         function _gasValExpectedCo2(co2Cert, arPct){
           return Number.isFinite(co2Cert) ? co2Cert + _gasValArCorr(arPct) : NaN;
         }
@@ -17890,7 +19098,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
             detail:'REF A-860-000-004 (Z03NI798EDC001) · 560 L @ 2200 psig (21 °C) · '
                   +'Airgas USA / Scott Medical, dist. COSMED USA · IVD.',
             warn:'Balance N₂ SIN argón: el canal de CO₂ se evalúa con la corrección de composición '
-                +'(DS SBN41 V0.5 §5.2). El canal de O₂ no la necesita.'
+                +'(DS del sensor de gas §5.2). El canal de O₂ no la necesita.'
           },
           'con-argon': {
             label:'Mezcla equivalente CON Ar 0.93 vol% (patrón preferido)',
@@ -17992,7 +19200,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           }
           const espCo2=_gasValExpectedCo2(co2Cert,arPct);
           el.innerHTML=ficha+'<strong>Corrección por argón activa.</strong> Mezcla con Ar '+arPct.toFixed(2)+' vol% frente al '
-            +GASVAL_AR_REF.toFixed(2)+' vol% que asume el SBN41 → el CO₂ esperado se desplaza '
+            +GASVAL_AR_REF.toFixed(2)+' vol% que asume el sensor de gas → el CO₂ esperado se desplaza '
             +(corr>=0?'+':'')+corr.toFixed(2)+' pp'
             +(Number.isFinite(espCo2)?(': se exige <strong>'+espCo2.toFixed(2)+' %</strong> en lugar de '+co2Cert.toFixed(2)+' %'):'')
             +'. El O₂ se contrasta sin corregir. Se corrige el criterio, no el sensor.';
@@ -18217,7 +19425,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           const o2=_gasValStats(samples.map(s=>s.o2)), co2=_gasValStats(samples.map(s=>s.co2));
           const p=_gasValFormParams();
           const {o2Cert,co2Cert,arPct,tolO2,tolCo2,stability}=p;
-          // El O₂ se contrasta contra el certificado; el CO₂, contra lo que el SBN41
+          // El O₂ se contrasta contra el certificado; el CO₂, contra lo que el sensor de gas
           // debe leer con ESTA mezcla (certificado + corrección de argón).
           const sc=_gasValScore(o2,co2,p);
           const {arCorr,co2Exp,o2Err,co2Err,fails,pass}=sc;
@@ -18438,13 +19646,13 @@ function calCO2Execute(){
         const CAL_FLOW_EXHALE_SIGN = -1;       // FLOW_SIGN_EXHALE (main.cpp:371)
         // [N1-2026-09-01] Este 0.12 NO es PRESS_THRESH_MIN. El firmware lo bajó a
         // 0.04 Pa para no perder ciclos a FR>25, pero 0.04 está BAJO la exactitud
-        // de cero del SDP810 (LFE_DP_ZERO_ACC_PA = 0.08 Pa): a ese nivel el propio
+        // de cero del sensor de flujo (LFE_DP_ZERO_ACC_PA = 0.08 Pa): a ese nivel el propio
         // cero del sensor puede disparar el detector. Para decidir el SENTIDO de una
         // embolada eso sería fatal — un signo espurio invierte la clasificación de la
         // carrera. Aquí se conserva 0.12 Pa = 1.5× la exactitud de cero, a propósito.
         const CAL_FLOW_NOISE_PA    = 0.12;     // 1.5× LFE_DP_ZERO_ACC_PA (0.08), NO el umbral del FW
         // [N1-2026-09-01] Guardarraíles nuevos de la embolada. Ver bloque REVISIÓN abajo.
-        const CAL_STROKE_MIN_MS    = 1500;     // embolada más corta ⇒ satura el SDP810
+        const CAL_STROKE_MIN_MS    = 1500;     // embolada más corta ⇒ satura el sensor de flujo
         const CAL_DP_SAT_PA        = 125.0;    // [GUARD-FS-2026-09-14] espejo de sdpUsablePa() = FS nominal (antes 118)
         const CAL_STALE_FRAC       = 0.005;    // [W1] 0.5 % del patrón: dos VT del FW más
                                                // juntos que esto son la MISMA lectura
@@ -18453,7 +19661,7 @@ function calCO2Execute(){
         /* ═══════════════════════════════════════════════════════════════════════
            [N1-2026-09-01] REVISIÓN NIVEL 1 — guardarraíles de saturación y duración
            ─────────────────────────────────────────────────────────────────────────
-           PROBLEMA. El elemento laminar satura el SDP810-125Pa en 240.7 L/min
+           PROBLEMA. El elemento laminar satura el sensor de flujo en 240.7 L/min
            (4.01 L/s). Una embolada de 3 L en medio seno da un pico de (π/2)·V/T:
                T=1.0 s → 4.71 L/s → 158 Pa  ✗ satura
                T=1.5 s → 3.14 L/s →  76 Pa  ✓
@@ -18887,7 +20095,7 @@ function calCO2Execute(){
                recortaba EN SILENCIO: sin bandera en el JSON ni contador en el
                dashboard. Era la mayor contribución al 3 L leído entre 1.5 y 4.5 L.
                Ahora coincide con la saturación y deja de ser el límite que manda.
-             · SATURACIÓN DEL SDP810 — 118 Pa ⇒ 240.7 L/min = 4.011 L/s, por la
+             · SATURACIÓN DEL sensor de flujo — 118 Pa ⇒ 240.7 L/min = 4.011 L/s, por la
                inversa de Forchheimer con R = 0.09580 y K2 = 1.638e-3 (config.h).
            T_min = (π/2)·V / (0.90·Q_lim), con 10 % de holgura, y nunca por debajo
            de CAL_STROKE_MIN_MS.
@@ -18981,7 +20189,7 @@ function calCO2Execute(){
                 acoplada a la velocidad. Mitigación de procedimiento: `THRESHOLD:0.12`
                 antes de la serie (ver main.cpp [CAL-2026-09-07]).
              4. VT del FW a 1 Hz, rancio en la mayoría de las filas (gates C-2/C-3).
-             5. saturación del SDP810 a 118 Pa — el FW ahora la cuenta por ciclo
+             5. saturación del sensor de flujo a 118 Pa — el FW ahora la cuenta por ciclo
                 (expSatSamples) y la imprime en [BREATH] como `sat=`.
              6. deriva del cero: error ε·T/R, ∝ duración. Único término que empuja al
                 alza en las emboladas LENTAS.
@@ -19116,13 +20324,13 @@ function calCO2Execute(){
         /* [W18-2026-09-07] R DEPENDE DE LA TEMPERATURA — el espejo tenía R fija.
            El elemento laminar es dominado por la VISCOSIDAD, no por la densidad:
            R(T) = R_ref · μ(T)/μ_ref, y el firmware lo aplica con Sutherland sobre la
-           T del SDP810 (main.cpp, rama LAMINAR). El navegador usaba R_ref siempre, así
+           T del sensor de flujo (main.cpp, rama LAMINAR). El navegador usaba R_ref siempre, así
            que las dos rutas dejaban de medir lo mismo en cuanto la placa se apartaba
            de la T de referencia — y `volDp` es justo la cifra contra la que se contrasta
            el VT del firmware (gate C3, ratio VT_fw/ΔP). Sobre 15-35 °C μ varía ~3.5 %,
            que entra entero en el ratio y puede empujarlo fuera de su tolerancia sin
            que nada esté mal.
-           Mismo guard que el firmware: T fuera de 200-400 K (SDP frío o rancio) → μ_ref.
+           Mismo guard que el firmware: T fuera de 200-400 K (ΔP frío o rancio) → μ_ref.
            Constantes de config.h: LFE_SUTHERLAND_* y LFE_MU_REF_PA_S. */
         const CAL_LFE_MU_REF    = 1.8133e-5;  // LFE_MU_REF_PA_S
         const CAL_SUTH_MU0      = 1.716e-5;   // LFE_SUTHERLAND_MU0
@@ -19614,7 +20822,7 @@ function calCO2Execute(){
           }
           // ── [W2-2026-09-02] rama ΔP+ ─ SE JUZGA ANTES QUE 'fast' Y 'cap' ───────
           // El firmware no integra esta rama, así que los guardarraíles que protegen SU
-          // integración — 'fast' (satura el SDP810 y el volumen sale corto) y 'cap'
+          // integración — 'fast' (satura el sensor de flujo y el volumen sale corto) y 'cap'
           // (VOLFLOW_CAP_REST recorta el caudal) — no tienen sujeto aquí. Evaluarlos
           // primero, como hacía el orden anterior, produce un diagnóstico inventado:
           // en la serie del 2026-09-02 seis carreras ΔP+ salieron rotuladas «⛔ CAP FW ·
@@ -20424,7 +21632,7 @@ function calCO2Execute(){
                        limiteDEpp:safeN(r.stability,null),
                        minimoMuestras:24 },
             correccionArgon:{ aplicada:Math.abs(arCorr)>=0.005, deltaCo2pp:arCorr,
-                              referencia:'DS SBN41-resX V0.5 §5.2',
+                              referencia:'DS del sensor de gas §5.2',
                               modelo:'delta_M = (Ar_gas - Ar_ref)/100 * (M_Ar - M_N2); delta_CO2 = delta_M / ((M_CO2 - M_N2)/100)',
                               masasMolares_g_mol:GASVAL_M,
                               nota:'Se corrige el valor ESPERADO, nunca la lectura ni las anclas FRC del sensor. El canal de O2 no se corrige.' },
@@ -20541,13 +21749,13 @@ function calCO2Execute(){
             ['Gas patrón · certificado', _repEsc(sd.gasCert)],
             ['Gas patrón · vencimiento', _repEsc(sd.gasExpiry)],
             ['Fecha de la maniobra', r.ts?new Date(r.ts).toLocaleString():'—'],
-            ['Argón de la mezcla', Number.isFinite(arPct)?(num(arPct)+' vol% (el SBN41 asume '+GASVAL_AR_REF.toFixed(2)+' vol%)'):'no declarado'],
+            ['Argón de la mezcla', Number.isFinite(arPct)?(num(arPct)+' vol% (el sensor de gas asume '+GASVAL_AR_REF.toFixed(2)+' vol%)'):'no declarado'],
             ['O₂ certificado', num(r.o2&&r.o2.cert)+' vol%'],
             ['O₂ medido (mediana)', num(r.o2&&r.o2.read)+' vol%'],
             ['O₂ · error', sgn(r.o2&&r.o2.error)+num(r.o2&&r.o2.error)+' pp (límite ±'+num(tolO2)+' pp) · DE '+num(r.o2&&r.o2.sd,3)],
             ['CO₂ certificado', num(r.co2&&r.co2.cert)+' vol%'],
             ['CO₂ esperado con este gas', num(co2Exp)+' vol%'
-              +(Math.abs(arCorr)>=0.005?(' · certificado corregido '+sgn(arCorr)+num(arCorr)+' pp por argón ausente (DS SBN41 V0.5 §5.2)'):' · sin corrección')],
+              +(Math.abs(arCorr)>=0.005?(' · certificado corregido '+sgn(arCorr)+num(arCorr)+' pp por argón ausente (DS del sensor de gas §5.2)'):' · sin corrección')],
             ['CO₂ medido (mediana)', num(r.co2&&r.co2.read)+' vol%'],
             ['CO₂ · error', sgn(r.co2&&r.co2.error)+num(r.co2&&r.co2.error)+' pp (límite ±'+num(tolCo2)+' pp) · DE '+num(r.co2&&r.co2.sd,3)],
             ['Ventana', Math.round(safeN(r.durationMs,30000)/1000)+' s · '+safeN(r.samples,0)+' tramas válidas · DE máx. '+num(r.stability,3)+' pp'],
@@ -20576,7 +21784,7 @@ function calCO2Execute(){
                 : '')
            + (otras?('<h2>Maniobras anteriores en este equipo</h2><table>'
                     +'<tr><th>Fecha</th><th>O₂ medido (vol%)</th><th>CO₂ medido (vol%)</th><th>CO₂ esperado (vol%)</th><th>Veredicto</th></tr>'+otras+'</table>'):'')
-           + (Math.abs(arCorr)>=0.005?('<div class="note"><b>Corrección por composición del gas patrón.</b> El SBN41 mide por una propiedad '
+           + (Math.abs(arCorr)>=0.005?('<div class="note"><b>Corrección por composición del gas patrón.</b> El sensor de gas mide por una propiedad '
              +'física de la mezcla completa y asume aire natural con Ar '+GASVAL_AR_REF.toFixed(2)+' vol% (DS V0.5 §5.2). El patrón empleado declara Ar '
              +num(arPct)+' vol%: ese argón está sustituido por N₂, de menor masa molar, y el canal de CO₂ lee bajo por composición, no por desajuste. '
              +'El valor ESPERADO se desplaza '+sgn(arCorr)+num(arCorr)+' pp; la lectura del sensor y sus anclas FRC no se modificaron. '
@@ -20605,6 +21813,111 @@ function calCO2Execute(){
         renderGasValidationHistory();
         _calWizUpdateCalc();
         </script>
+      </div>
+
+      <!-- ══ PAGE: EVALUACIÓN PREBIOLÓGICA [PRE-2026-10-21] ══
+           Verificación del instrumento sin sujeto (jeringa 3 L, bolsa Douglas) con las variables
+           del «Measurement Data» del Cortex. Lógica: MÓDULO Evaluación prebiológica (pre…). -->
+      <div class="page" id="page-prebio">
+        <div class="section-header">🧪 Evaluación prebiológica</div>
+        <div class="notice">Verificación sin sujeto con jeringa o bolsa Douglas. Una fila por respiración cerrada por el equipo.
+          VE y VT en <b>ATPS</b>, tal como los entrega el equipo (sin conversión a BTPS).
+          VO₂ y VCO₂ no se muestran: con el mismo gas en inspiración y espiración no son calculables.</div>
+        <div class="session-stats-bar">
+          <div class="stat-item">Equipo: <strong id="pre-device">--</strong></div>
+          <div class="stat-item" title="Fondo de escala del sensor de ΔP, leído con DIAG">ΔP fondo de escala: <strong id="pre-dpfs">sin consultar</strong></div>
+          <div class="stat-item">Respiraciones: <strong id="pre-count">0</strong></div>
+          <div class="stat-item" title="Recalibración de gas declarada por el equipo (GET_CONFIG). Criterio: ancla O₂ 20.95 ± 0.10 y CO₂ 0.04 ± 0.05 vol%, sin forzar">Gas: <strong id="pre-gas">sin consultar</strong></div>
+          <div class="stat-item" style="margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="preQueryDevice()"
+                    title="Envía DIAG: identifica el equipo y el fondo de escala del sensor de ΔP">↻ Consultar equipo</button>
+            <button class="btn btn-primary btn-sm" onclick="preReportOpen()"
+                    title="Abre el informe para imprimir o guardar como PDF">📄 Informe</button>
+            <button class="btn btn-ghost btn-sm" onclick="preExportCSV()">⬇ CSV</button>
+            <button class="btn btn-ghost btn-sm" onclick="preClear()">🗑 Limpiar</button>
+          </div>
+        </div>
+        <!-- Tarjetas: valor grande = última respiración; línea inferior = media de la ventana. -->
+        <div class="metrics-grid">
+          <div class="metric-mini"><div class="mm-label">VE</div><div class="mm-value" id="pre-c-ve">--</div><div class="mm-unit" id="pre-cu-ve">L/min ATPS</div></div>
+          <div class="metric-mini"><div class="mm-label">VT</div><div class="mm-value" id="pre-c-vt">--</div><div class="mm-unit" id="pre-cu-vt">L ATPS</div></div>
+          <div class="metric-mini"><div class="mm-label">FR</div><div class="mm-value" id="pre-c-fr">--</div><div class="mm-unit" id="pre-cu-fr">/min</div></div>
+          <div class="metric-mini"><div class="mm-label">FeO₂</div><div class="mm-value" id="pre-c-feo2">--</div><div class="mm-unit" id="pre-cu-feo2">vol%</div></div>
+          <div class="metric-mini"><div class="mm-label">FiO₂</div><div class="mm-value" id="pre-c-fio2">--</div><div class="mm-unit" id="pre-cu-fio2">vol%</div></div>
+          <div class="metric-mini"><div class="mm-label">FeCO₂</div><div class="mm-value" id="pre-c-feco2">--</div><div class="mm-unit" id="pre-cu-feco2">vol%</div></div>
+          <div class="metric-mini"><div class="mm-label">FiCO₂</div><div class="mm-value" id="pre-c-fico2">--</div><div class="mm-unit" id="pre-cu-fico2">vol%</div></div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;margin:0 0 10px;font-size:0.78rem;">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <span style="color:var(--muted);">Informe:</span>
+            <label>Tipo de prueba
+              <select id="pre-rep-tipo">
+                <option>Jeringa 3 L</option><option>Bolsa Douglas</option><option>Jeringa + bolsa Douglas</option><option>Otra</option>
+              </select></label>
+            <label>Operador <input id="pre-rep-op" type="text" style="width:150px;"></label>
+            <label style="flex:1;min-width:220px;display:flex;gap:6px;align-items:center;">Observaciones
+              <input id="pre-rep-obs" type="text" style="flex:1;" placeholder="montaje, lote de bolsa, referencia usada…"></label>
+          </div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;margin:0 0 10px;font-size:0.78rem;">
+          <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:8px;">
+            <label>Resumen de las últimas
+              <input id="pre-lastn" type="number" min="0" step="1" value="10" style="width:60px;" oninput="preRenderSoon()">
+              respiraciones (0 = todas)</label>
+            <label title="Un ciclo con ΔP en fondo de escala tiene el VT recortado">
+              <input id="pre-excl-sat" type="checkbox" checked onchange="preRenderSoon()"> Excluir ciclos con ΔP saturado</label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;" title="Valor esperado: volumen de la jeringa o composición de la bolsa medida con el equipo de referencia. Vacío = sin comparación">
+            <span style="color:var(--muted);">Referencia:</span>
+            <label>VE <input id="pre-ref-ve" type="number" step="0.1" style="width:70px;" oninput="preRenderSoon()"></label>
+            <label>VT <input id="pre-ref-vt" type="number" step="0.001" value="3.000" style="width:70px;" oninput="preRenderSoon()"></label>
+            <label>FR <input id="pre-ref-fr" type="number" step="0.1" style="width:60px;" oninput="preRenderSoon()"></label>
+            <label>FeO₂ <input id="pre-ref-feo2" type="number" step="0.01" style="width:70px;" oninput="preRenderSoon()"></label>
+            <label>FiO₂ <input id="pre-ref-fio2" type="number" step="0.01" style="width:70px;" oninput="preRenderSoon()"></label>
+            <label>FeCO₂ <input id="pre-ref-feco2" type="number" step="0.01" style="width:70px;" oninput="preRenderSoon()"></label>
+            <label>FiCO₂ <input id="pre-ref-fico2" type="number" step="0.01" style="width:70px;" oninput="preRenderSoon()"></label>
+          </div>
+        </div>
+        <div class="log-table-wrap" style="margin-bottom:10px;">
+          <table class="log-table">
+            <thead><tr><th>Variable</th><th>Unidad</th><th>Media</th><th>DE</th><th>CV %</th><th>Referencia</th><th>Δ % vs ref.</th><th>n</th></tr></thead>
+            <tbody id="pre-summary"></tbody>
+          </table>
+        </div>
+        <div style="font-size:0.78rem;font-weight:800;margin:4px 2px 6px;">Por etapa (tramos de FR estable)</div>
+        <div class="log-table-wrap" style="margin-bottom:10px;">
+          <table class="log-table">
+            <thead><tr><th>Etapa</th><th>t (s)</th><th>FR</th><th title="Respiraciones de la etapa; entre paréntesis, cuántas saturaron">n</th>
+              <th title="VT medio sin las respiraciones saturadas">VT medio</th><th>CV %</th><th>Δ % VT</th>
+              <th title="Media de las medianas de O₂ instantáneo por respiración">O₂ sensor</th>
+              <th title="Media de las medianas de CO₂ instantáneo por respiración">CO₂ sensor</th>
+              <th title="Dispersión media del CO₂ instantáneo dentro de cada respiración: ruido del canal">DE CO₂</th></tr></thead>
+            <tbody id="pre-stages"></tbody>
+          </table>
+        </div>
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead><tr>
+              <th>#</th><th>t (s)</th><th>Hora</th>
+              <th title="Media de las últimas 8 respiraciones del equipo, ATPS">VE L/min</th>
+              <th title="Volumen de la respiración, ATPS">VT L</th><th>FR /min</th>
+              <th title="Fracción espirada ponderada por flujo (ventana espiratoria del equipo)">FeO₂ %</th>
+              <th title="Mediana del O₂ instantáneo (1 Hz) desde la respiración anterior; con gas constante = gas en el sensor">FiO₂ %</th>
+              <th title="Fracción espirada ponderada por flujo (ventana espiratoria del equipo)">FeCO₂ %</th>
+              <th title="Mediana del CO₂ instantáneo (1 Hz) desde la respiración anterior; con gas constante = gas en el sensor">FiCO₂ %</th>
+              <th title="Desviación estándar del CO₂ instantáneo dentro de la respiración: ruido del canal">DE CO₂</th>
+              <th title="⚠ = ΔP en fondo de escala o en el riel durante el ciclo: VT recortado">ΔP</th>
+            </tr></thead>
+            <tbody id="pre-body"><tr class="log-empty"><td colspan="12">Sin respiraciones — conecta el equipo y embola la jeringa</td></tr></tbody>
+          </table>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;line-height:1.5;">
+          Todas las celdas muestran un valor. En <i>cursiva</i> con <b>*</b> = estimación (pasa el cursor para ver el origen):
+          el equipo no publicó ese dato en la respiración. FeO₂/FeCO₂* = gas del sensor con ΔP espiratorio (con el mismo gas en
+          ambas fases el equipo calcula la Fe y la rechaza por diseño); Fi* = última lectura; DE* = últimas 5 lecturas;
+          FR* = 60/Δt entre respiraciones; VE* = VT × FR. FiO₂/FiCO₂ = mediana de las lecturas a 1 Hz entre dos respiraciones.
+          Si el equipo se reinicia o cambia, se abre una sesión nueva y el resumen usa solo esa sesión.
+        </div>
       </div>
 
       <!-- ══ PAGE: DIAGNOSIS & REMOTE CONTROL ══ -->
@@ -20804,10 +22117,11 @@ function calCO2Execute(){
             <div class="report-title"><span style="color:#70d4e9;">Vo₂</span><span style="color:#486060;">SMART</span> PRO v5.0</div>
             <div class="report-subtitle">Informe de Ergoespirometría · Calorimetría Indirecta</div>
             <div style="margin-top:8px;">
-              <span style="font-family:var(--display);font-size:0.9rem;font-weight:900;font-style:italic;">
+              <!-- [HIDE-AM-2026-10-22] ver splash -->
+              <span class="am-wordmark" style="display:none;"><span style="font-family:var(--display);font-size:0.9rem;font-weight:900;font-style:italic;">
                 <span style="color:#5b5b5f;">ACTION</span><span style="color:#d6da13;">SMART</span>
-              </span><span style="color:#5b5b5f;font-size:0.55rem;vertical-align:super;">®</span>
-              <span style="font-size:0.68rem;color:#6e6e73;font-style:italic;margin-left:6px;">La ciencia aplicada al deporte</span>
+              </span><span style="color:#5b5b5f;font-size:0.55rem;vertical-align:super;">®</span></span>
+              <span style="font-size:0.68rem;color:#6e6e73;font-style:italic;">La ciencia aplicada al deporte</span>
               <span style="font-size:0.62rem;color:#6e6e73;margin-left:8px;font-family:var(--mono);">🇨🇱 Chile · Since 2018</span>
             </div>
             <div class="report-meta">Fecha: <span id="rep-date">--</span> · Hora: <span id="rep-time">--</span> · Patente CL 2024024875</div>
@@ -20841,7 +22155,7 @@ function calCO2Execute(){
             </div>
             <div id="rep-frc-warn" style="display:none;margin-top:6px;font-size:0.72rem;color:#c62828;font-weight:700;">
               ⚠ Sin FRC verificada por el dispositivo — los valores absolutos de VO₂, VCO₂ y RER
-              no son trazables (SEK-SBN41 Starting Guide §2.3). Uso comparativo/tendencia únicamente.
+              no son trazables (guía del fabricante §2.3). Uso comparativo/tendencia únicamente.
             </div>
           </div>
 
@@ -21582,13 +22896,40 @@ function calCO2Execute(){
   </div>
 </div>
 
+<!-- [BATT-UX-2026-10-06] Cómo cargar (H-3) / aviso de autonomía antes de iniciar (H-4).
+     docs/BATERIA_CARGA_PROPUESTA_2026-10-06.md §5 -->
+<div class="protocol-overlay" id="batt-overlay" onclick="event.target===this?closeBattOverlay():0">
+  <div class="protocol-modal" style="max-width:480px;">
+    <div id="batt-gate-box" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:8px;padding:10px 12px;font-size:0.82rem;color:#ef4444;margin-bottom:14px;">
+      <strong data-i18n="batt_gate_title">Batería insuficiente para la prueba</strong>
+      <div id="batt-gate-text" style="margin-top:4px;"></div>
+    </div>
+    <h3 data-i18n="batt_help_title">Cómo cargar el equipo</h3>
+    <ul class="protocol-steps">
+      <li><span class="step-icon">1.</span><span class="step-text" data-i18n="batt_h1">Interruptor en ON. Con el interruptor en OFF la pantalla enciende por USB, pero la batería NO carga.</span></li>
+      <li><span class="step-icon">2.</span><span class="step-text" data-i18n="batt_h2">Use un cargador de pared USB (1 A o más). El puerto de un PC entrega menos corriente.</span></li>
+      <li><span class="step-icon">3.</span><span class="step-text" data-i18n="batt_h3">Cargue sin sesión en curso y, si puede, con la pantalla apagada: el equipo encendido consume ~350 mA del cargador.</span></li>
+      <li><span class="step-icon">4.</span><span class="step-text" data-i18n="batt_h4">Con el equipo encendido la carga completa puede tardar hasta ~15 h: cárguelo de un día para otro.</span></li>
+      <li><span class="step-icon">5.</span><span class="step-text" data-i18n="batt_h5">Al terminar, desconecte el USB y reinicie el equipo SIN flujo en el elemento (cero del sensor de presión).</span></li>
+    </ul>
+    <div id="batt-status-text" style="background:rgba(96,232,160,0.08);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--muted);"></div>
+    <!-- [BATT-UX-1B-2026-10-06] Carga ligera: solo TFT_OFF; el modo carga completo es FW (Etapa 4) -->
+    <div id="batt-light-note" style="display:none;margin-top:8px;font-size:0.76rem;color:#eab308;"></div>
+    <div class="protocol-actions">
+      <button class="btn btn-ghost btn-sm" type="button" id="batt-btn-light" onclick="battLightCharge()" data-i18n="batt_light_btn">Carga ligera: apagar pantalla</button>
+      <button class="btn btn-ghost btn-sm" type="button" id="batt-btn-close" onclick="closeBattOverlay()">Cerrar</button>
+      <button class="btn btn-warn btn-sm" type="button" id="batt-btn-continue" style="display:none;" onclick="battGateContinue()" data-i18n="batt_gate_continue">Continuar igual</button>
+    </div>
+  </div>
+</div>
+
 <!-- CAL O2 WIZARD — Paso 1 obligatorio post-conexión (FRC ambiente) -->
 <div class="protocol-overlay" id="calo2-overlay">
   <div class="protocol-modal" style="max-width:460px;">
     <h3>Calibración ambiente · 1 de 2 — ancla O₂</h3>
     <ul class="protocol-steps">
       <li><span class="step-icon">🌬️</span><span class="step-text"><strong>Retira la mascarilla</strong> — sensor en aire ambiente limpio. NO soples sobre el equipo durante el anclaje.</span></li>
-      <li><span class="step-icon">⏱️</span><span class="step-text"><strong>Calentamiento del sensor</strong> — se requieren 180 s (t_WU, SEK Guide §2.3 paso 7) encendido antes de anclar O₂ — FRC prematuro = ancla inválida. El firmware rechaza CAL_O2 antes de ese plazo.</span></li>
+      <li><span class="step-icon">⏱️</span><span class="step-text"><strong>Calentamiento del sensor</strong> — se requieren 180 s (t_WU, guía del fabricante §2.3 paso 7) encendido antes de anclar O₂ — FRC prematuro = ancla inválida. El firmware rechaza CAL_O2 antes de ese plazo.</span></li>
       <li><span class="step-icon">🎯</span><span class="step-text"><strong>Ancla ambiente 20.9 %</strong> — sin este paso el canal O₂ no tiene referencia y el VO₂ puede leer &lt;2 ml/kg/min.</span></li>
       <li><span class="step-icon">🔗</span><span class="step-text"><strong>La mascarilla sigue fuera hasta el final</strong> — el ancla de CO₂ encadena a continuación sobre el MISMO aire ambiente. No se la coloques al sujeto entre los dos pasos.</span></li>
     </ul>
@@ -21698,7 +23039,7 @@ function calCO2Execute(){
       <div class="modal-field" style="margin:0;flex:0 0 180px;">
         <label for="serial-monitor-baud">Velocidad del firmware</label>
         <select id="serial-monitor-baud">
-          <option value="115200" selected>115200 · SensirionVo2 actual</option>
+          <option value="115200" selected>115200 · VO2Smart actual</option>
           <option value="9600">9600 · firmware antiguo</option>
         </select>
       </div>
