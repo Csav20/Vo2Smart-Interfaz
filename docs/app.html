@@ -2109,7 +2109,7 @@ textarea.form-input{resize:vertical;min-height:100px;}
   /* Print footer via CSS counter */
   @page{
     @bottom-center{
-      content:"VO₂Smart PRO · Informe CPET · ActionSmart® · Chile · Since 2018 · Pat. CL 2024024875";
+      content:"VO₂Smart PRO · Informe de rendimiento metabólico · ActionSmart® · Chile · Since 2018 · Pat. CL 2024024875";
       font-size:7pt;color:#888;
     }
     @bottom-right{content:counter(page) " / " counter(pages);font-size:7pt;color:#888;}
@@ -2491,7 +2491,7 @@ function vo2Enter(){
       </svg>
     </div>
     <div class="splash-brand" style="font-size:2.6rem;"><span style="color:#70d4e9;">Vo₂</span><span style="color:#486060;">SMART</span> <span style="color:var(--text);font-size:1.4rem;">PRO</span></div>
-    <div class="splash-subtitle" style="margin-top:8px;">Sistema Avanzado de Análisis Cardiopulmonar · Protocolo PREBIO-VO2SMART-001</div>
+    <div class="splash-subtitle" style="margin-top:8px;">Analizador portátil de rendimiento metabólico · deporte y bienestar</div>
     <div style="text-align:center;margin-top:16px;">
       <!-- [HIDE-AM-2026-10-22] Logotipo ACTIONSMART ® oculto por decisión del usuario; quitar display:none para restaurar -->
       <span class="am-wordmark" style="display:none;"><span style="font-family:var(--display);font-size:1.4rem;font-weight:900;font-style:italic;">
@@ -3236,7 +3236,7 @@ const I18N = {
     nav_thresholds: "Umbrales",
     nav_hrv: "HRV & SNA",
     nav_metabolism: "Metabolismo",
-    nav_calorimetry: "Calorimetría",
+    nav_calorimetry: "Gasto energético",
     nav_mss: "Comparativa MSS",
     nav_substrates: "Sustratos",
     nav_data: "Datos",
@@ -3252,7 +3252,7 @@ const I18N = {
     mss_vevo2_unit: "equiv. O2",
     mss_stage_prefix: "Etapa",
     mss_rpm_na: "N/D",
-    dash_notice: "Sin equipo conectado. Presiona \"VO₂Smart BLE\" en la barra superior, conecta el receptor ESP-NOW (panel Gateway) o activa el modo Demo.",
+    dash_notice: "Sin equipo conectado. Presiona \"VO₂Smart BLE\" en la barra superior, conecta el Repetidor VO2Smart (panel Repetidor) o activa el modo Demo.",
     test_standby: "STANDBY",
     test_rest: "REPOSO",
     test_prep: "PREPARACIÓN",
@@ -3305,7 +3305,7 @@ const I18N = {
     protocol_type_custom: "Personalizado",
     protocol_goal_vo2max: "VO₂máx incremental",
     protocol_goal_submax: "Submáximo controlado",
-    protocol_goal_clinical: "Evaluación clínica",
+    protocol_goal_clinical: "Evaluación de bienestar",
     protocol_goal_metabolic: "Evaluación metabólica",
     protocol_goal_technical: "Test técnico · firmware, hardware y BLE (sin interpretación fisiológica)",
     protocol_goal_power: "Potencia anaeróbica",
@@ -3340,9 +3340,9 @@ const I18N = {
     charts_smooth: "Alisado Gráficos:",
     thresh_title: "🎯 Umbrales Ventilatorios & Cinética VO₂",
     hrv_title: "🧠 HRV & Sistema Nervioso Autónomo",
-    cal_title: "🔥 Calorimetría Indirecta — Modelo Híbrido 4 Métodos",
+    cal_title: "🔥 Gasto energético por intercambio respiratorio — Modelo híbrido 4 métodos",
     sub_title: "⚗️ Oxidación de Sustratos — Frayn (1983)",
-    user_title: "👤 Datos del Paciente",
+    user_title: "👤 Datos del evaluado",
     user_name: "Nombre completo",
     user_age: "Edad",
     user_sex: "Sexo",
@@ -3359,7 +3359,7 @@ const I18N = {
     user_athlete: "Atleta",
     log_title: "📋 Registro de Sesión",
     calib_title: "🔬 Calibración vs Cortex Metalyzer 3B",
-    rep_title: "📄 Informe de Ergoespirometría",
+    rep_title: "📄 Informe de rendimiento metabólico",
     mm_ve: "VE",
     mm_rr: "Fr. Resp.",
     mm_battery: "Batería",
@@ -3483,7 +3483,7 @@ const I18N = {
     nav_thresholds: "Thresholds",
     nav_hrv: "HRV & ANS",
     nav_metabolism: "Metabolism",
-    nav_calorimetry: "Calorimetry",
+    nav_calorimetry: "Energy expenditure",
     nav_mss: "MSS Compare",
     nav_substrates: "Substrates",
     nav_data: "Data",
@@ -3498,7 +3498,7 @@ const I18N = {
     mss_vevo2_unit: "O2 equiv.",
     mss_stage_prefix: "Stage",
     mss_rpm_na: "N/A",
-    dash_notice: "No device connected. Press \"VO₂Smart BLE\" in the top bar, connect the ESP-NOW receiver (Gateway panel) or enable Demo mode.",
+    dash_notice: "No device connected. Press \"VO₂Smart BLE\" in the top bar, connect the VO2Smart Repeater (Repeater panel) or enable Demo mode.",
     test_standby: "STANDBY",
     test_rest: "REST",
     test_prep: "PREPARATION",
@@ -3586,9 +3586,9 @@ const I18N = {
     charts_smooth: "Chart Smoothing:",
     thresh_title: "🎯 Ventilatory Thresholds & VO₂ Kinetics",
     hrv_title: "🧠 HRV & Autonomic Nervous System",
-    cal_title: "🔥 Indirect Calorimetry — Hybrid 4-Method Model",
+    cal_title: "🔥 Energy expenditure from respiratory gas exchange — Hybrid 4-method model",
     sub_title: "⚗️ Substrate Oxidation — Frayn (1983)",
-    user_title: "👤 Patient Data",
+    user_title: "👤 Subject Data",
     user_name: "Full Name",
     user_age: "Age",
     user_sex: "Sex",
@@ -3605,7 +3605,7 @@ const I18N = {
     user_athlete: "Athlete",
     log_title: "📋 Session Log",
     calib_title: "🔬 Calibration vs Cortex Metalyzer 3B",
-    rep_title: "📄 Cardiopulmonary Exercise Report",
+    rep_title: "📄 Metabolic Performance Report",
     mm_ve: "VE",
     mm_rr: "Resp. Rate",
     mm_battery: "Battery",
@@ -3729,7 +3729,7 @@ const I18N = {
     nav_thresholds: "Limiares",
     nav_hrv: "HRV & SNA",
     nav_metabolism: "Metabolismo",
-    nav_calorimetry: "Calorimetria",
+    nav_calorimetry: "Gasto energético",
     nav_mss: "Comparativo MSS",
     nav_substrates: "Substratos",
     nav_data: "Dados",
@@ -3744,7 +3744,7 @@ const I18N = {
     mss_vevo2_unit: "equiv. O2",
     mss_stage_prefix: "Etapa",
     mss_rpm_na: "N/D",
-    dash_notice: "Nenhum equipamento conectado. Pressione \"VO₂Smart BLE\" na barra superior, conecte o receptor ESP-NOW (painel Gateway) ou ative o modo Demo.",
+    dash_notice: "Nenhum equipamento conectado. Pressione \"VO₂Smart BLE\" na barra superior, conecte o Repetidor VO2Smart (painel Repetidor) ou ative o modo Demo.",
     test_standby: "STANDBY",
     test_rest: "REPOUSO",
     test_prep: "PREPARAÇÃO",
@@ -3797,7 +3797,7 @@ const I18N = {
     protocol_type_custom: "Personalizado",
     protocol_goal_vo2max: "VO₂máx incremental",
     protocol_goal_submax: "Submáximo controlado",
-    protocol_goal_clinical: "Avaliação clínica",
+    protocol_goal_clinical: "Avaliação de bem-estar",
     protocol_goal_metabolic: "Avaliação metabólica",
     protocol_goal_technical: "Teste técnico · firmware, hardware e BLE (sem interpretação fisiológica)",
     protocol_goal_power: "Potência anaeróbica",
@@ -3832,9 +3832,9 @@ const I18N = {
     charts_smooth: "Suavização Gráficos:",
     thresh_title: "🎯 Limiares Ventilatórios & Cinética VO₂",
     hrv_title: "🧠 HRV & Sistema Nervoso Autônomo",
-    cal_title: "🔥 Calorimetria Indireta — Modelo Híbrido 4 Métodos",
+    cal_title: "🔥 Gasto energético por troca respiratória — Modelo híbrido 4 métodos",
     sub_title: "⚗️ Oxidação de Substratos — Frayn (1983)",
-    user_title: "👤 Dados do Paciente",
+    user_title: "👤 Dados do avaliado",
     user_name: "Nome completo",
     user_age: "Idade",
     user_sex: "Sexo",
@@ -3851,7 +3851,7 @@ const I18N = {
     user_athlete: "Atleta",
     log_title: "📋 Registro da Sessão",
     calib_title: "🔬 Calibração vs Cortex Metalyzer 3B",
-    rep_title: "📄 Relatório de Ergoespirometria",
+    rep_title: "📄 Relatório de desempenho metabólico",
     mm_ve: "VE",
     mm_rr: "Fr. Resp.",
     mm_battery: "Bateria",
@@ -4256,11 +4256,10 @@ function applyFlowElement(flowName, flowK, boardTag){
   // no se elimina, las placas de venturi lo siguen necesitando.
   const bV=document.getElementById('cal-block-venturi');
   const bL=document.getElementById('cal-block-laminar');
-  // El asistente del elemento activo manda, pero la tabla D2→K ya NO se esconde
-  // en laminar: el operador la usa como banco de COMPARACION manual frente a la
-  // K medida del LFE. Se rotula como comparativa — no es fuente de calibracion
-  // del LFE (ahi K se mide con jeringa, no se deriva de beta^4).
-  if(bV) bV.style.display = '';
+  // [AUD-CAL-2026-10-26 D6] En laminar se oculta la tabla D2→K del venturi: su botón
+  // aplicaba CORRECTION (p. ej. 1.000 = VT +38 % en FDC0FC) y el venturi está retirado
+  // desde el 2026-10-06. Todas las placas operativas son LAMINAR.
+  if(bV) bV.style.display = lam ? 'none' : '';
   if(bL) bL.style.display = lam ? '' : 'none';
   const vNote=document.getElementById('cal-venturi-note');
   if(vNote) vNote.style.display = lam ? '' : 'none';
@@ -4271,7 +4270,7 @@ function applyFlowElement(flowName, flowK, boardTag){
 
   const t=document.getElementById('cal-k-title');
   if(t) t.textContent = lam
-    ? '⚙️ Factor K — Elemento laminar (LFE Ø20 mm)'
+    ? '⚙️ Factor K — Elemento laminar (LFE)'
     : '⚙️ Factor K — Geometría Venturi D1=26mm';
   const sub=document.getElementById('cal-k-sub');
   if(sub) sub.textContent = lam
@@ -8059,7 +8058,7 @@ function getCalorimetryPresentation(cal, opts={}){
     }else if(diff>15){
       rmrBadgeClass='danger';
       rmrBadgeText='Elevado ('+sgn+diff.toFixed(0)+'%) vs '+eqShort;
-      rmrNote='REE medido >15% sobre '+pred.equation+' ('+pred.group+'); revisar fuga máscara, FRC O₂, agitación o contexto clínico.';
+      rmrNote='REE medido >15% sobre '+pred.equation+' ('+pred.group+'); revisar fuga máscara, FRC O₂, agitación o contexto de la medición.';
     }else{
       rmrBadgeClass='danger';
       rmrBadgeText='Bajo ('+diff.toFixed(0)+'%) vs '+eqShort;
@@ -8073,7 +8072,7 @@ function getCalorimetryPresentation(cal, opts={}){
     }else{
       rmrBadgeClass='danger';
       rmrBadgeText='No basal';
-      rmrNote='La medición actual no corresponde a reposo basal; usarla como RMR/TMB sería clínicamente inconsistente.';
+      rmrNote='La medición actual no corresponde a reposo basal; usarla como RMR/TMB sería inconsistente.';
     }
   }
 
@@ -8564,6 +8563,9 @@ function processData(d){
     if(!btpsAlreadyApplied){
       ['ve','vol','vt','VE','VT'].forEach(k=>scaleField(d,k,ambient.btps));
       d.btpsApplied=true;
+      // [HALLAZGOS-2026-10-26 P16 · M-9] Factor aplicado, para deshacerlo donde la
+      // medida debe quedar en ATPS (asistente de jeringa) y para rotular la pantalla.
+      d.btpsFactorApplied=ambient.btps;
     }
   }
   d.humidity=ambientHumidity;
@@ -9163,10 +9165,10 @@ function processData(d){
   const smoothInfoEl=document.getElementById('smooth-info');
   if(smoothInfoEl&&_isBxBMode){
     if(_bxbGate.held){
-      smoothInfoEl.textContent='BxB clínico retenido · '+_bxbGate.reason;
+      smoothInfoEl.textContent='BxB retenido · '+_bxbGate.reason;
       smoothInfoEl.style.color='#8a5a00';
     }else if(_hasBxBData){
-      smoothInfoEl.textContent='BxB clínico · QC '+describeBxbQc(_bxbMeta.qc)+' · conf '+_bxbMeta.conf.toFixed(2);
+      smoothInfoEl.textContent='BxB · QC '+describeBxbQc(_bxbMeta.qc)+' · conf '+_bxbMeta.conf.toFixed(2);
       smoothInfoEl.style.color=_bxbMeta.conf>=0.65?'#1a7f37':'var(--muted)';
     }
   }
@@ -9620,7 +9622,10 @@ function processData(d){
     window._offlineFullShown = false;
   }
 
-  G.currentData={vo2,vco2,rer,rer_raw,rerDisplay,rerFlag,rerConf,rerMethod,rerFlow,rerGas,gasValid,dataConf,ssConf:steady.ssConf,ssSlopePctMin:steady.slopePctMin,ssR2:steady.r2,isSteady:steady.isSteady,ve:ve_c,veb:safeN(sd.veb,0),rr:rr_c,vol,hr,o2,co2,feo2:_feo2,feco2:_feco2,bat:batf,cal,temp,peto2,petco2,o2pulse,artFlag,vo2r,rqr,frr,do2r,ve_raw,rr_raw_orig,bxb_seq:_bxbMeta.seq,bxb_vt:safeN(sd.bxb_vt),vo2_bxb:_hasBxBData?safeN(sd.vo2_bxb):0,bxb_raw:_bxbMeta.raw,bxb_qc:_bxbMeta.qc,bxb_conf:_bxbMeta.conf,bxb_cv:_bxbMeta.cv,bxb_src:_bxbMeta.src,bxb_display_held:_bxbGate.held,bxb_display_reason:_bxbGate.reason,metNew:_metNew,bxbNew:_bxbNew};
+  G.currentData={vo2,vco2,rer,rer_raw,rerDisplay,rerFlag,rerConf,rerMethod,rerFlow,rerGas,gasValid,dataConf,ssConf:steady.ssConf,ssSlopePctMin:steady.slopePctMin,ssR2:steady.r2,isSteady:steady.isSteady,ve:ve_c,veb:safeN(sd.veb,0),rr:rr_c,vol,hr,o2,co2,feo2:_feo2,feco2:_feco2,bat:batf,cal,temp,peto2,petco2,o2pulse,artFlag,vo2r,rqr,frr,do2r,ve_raw,rr_raw_orig,bxb_seq:_bxbMeta.seq,bxb_vt:safeN(sd.bxb_vt),vo2_bxb:_hasBxBData?safeN(sd.vo2_bxb):0,bxb_raw:_bxbMeta.raw,bxb_qc:_bxbMeta.qc,bxb_conf:_bxbMeta.conf,bxb_cv:_bxbMeta.cv,bxb_src:_bxbMeta.src,bxb_display_held:_bxbGate.held,bxb_display_reason:_bxbGate.reason,metNew:_metNew,bxbNew:_bxbNew,
+    // [HALLAZGOS-2026-10-26 P16 · M-9] `vol` y `ve` están en BTPS (×btpsFactor). La jeringa de
+    // 3 L está a condiciones ambiente: el asistente de calibración usa vol_atps.
+    btpsFactor:safeN(d.btpsFactorApplied,1)||1, vol_atps:vol/(safeN(d.btpsFactorApplied,1)||1)};
   // ETAPA 1 · B-1: G.currentData SÍ se refresca cada trama (alimenta el display en
   // vivo), pero recordEntry() solo acumula en muestra metabólica nueva — es la
   // fuente del informe y del CSV, donde el duplicado 5× sí contaminaba estadística.
@@ -10301,6 +10306,8 @@ function handleRemoteCommandRaw(raw){
     if(r.cmd==='DIAG'&&r.dp_fs!==undefined){
       // [PRE-2026-10-21] Fondo de escala del sensor de ΔP (125 / 500 Pa) para la vista prebiológica.
       preSetDevice({dpFs:safeN(r.dp_fs,0),board:r.board_tag});
+      // [HALLAZGOS-2026-10-26 P7] y para la guarda de saturación del asistente de jeringa.
+      G.flow=G.flow||{}; G.flow.dpFs=safeN(r.dp_fs,0);
     }
     if(r.cmd==='GET_CONFIG'){
       console.log('📋 Device config:',r);
@@ -10877,7 +10884,7 @@ function processGatewayLine(p){
     if(n.demo){
       if(!g.demoWarned){
         g.demoWarned=true;
-        toast('Gateway en modo DEMO (build de auto-test): datos sinteticos, no entran a la sesion.','warning');
+        toast('Repetidor en modo DEMO (build de auto-test): datos sinteticos, no entran a la sesion.','warning');
       }
     }else if(_gwBleLive()){
       // Regla 1: el BLE manda. No se toca la sesión.
@@ -10895,7 +10902,7 @@ function processGatewayLine(p){
     n.demo=p.demo===1||p.demo===true; n.last=Date.now();
     if(!g.helloSeen[src]){
       g.helloSeen[src]=true;
-      toast('Gateway: equipo '+n.id+' ('+n.board+' fw'+n.fw+') K='+n.k.toFixed(3)+
+      toast('Repetidor: equipo '+n.id+' ('+n.board+' fw'+n.fw+') K='+n.k.toFixed(3)+
             ' peso='+n.weight.toFixed(1)+' kg'+(n.demo?' [DEMO]':''),'info');
     }
     _gwRender();
@@ -10922,7 +10929,7 @@ function processGatewayLine(p){
     Object.keys(g.nodes).forEach(k=>{if(g.nodes[k].demo)delete g.nodes[k];});
     if(g.sel&&!g.nodes[g.sel])g.sel=null;
     g.demoWarned=false;
-    toast('Gateway: llego dato real, modo DEMO desactivado.','success');
+    toast('Repetidor: llegó dato real, modo DEMO desactivado.','success');
     _gwRender();
     return;
   }
@@ -10930,7 +10937,7 @@ function processGatewayLine(p){
   if(kind==='boot'){
     console.log('🛰️ GATEWAY boot:',JSON.stringify(p));
     if(p.metrics_b!==undefined&&p.metrics_b!==132){
-      toast('Gateway con protocolo distinto (EnMetrics '+p.metrics_b+'B, se esperan 132): no usar estos datos.','error');
+      toast('Repetidor con protocolo distinto (EnMetrics '+p.metrics_b+'B, se esperan 132): no usar estos datos.','error');
     }
     return;
   }
@@ -11059,7 +11066,8 @@ function _gwSyncLink(g,now){
   const st=document.getElementById('topStatus');
   if(!st)return;
   if(feeding){
-    const label='Gateway ESP-NOW · '+(n.id||n.src);
+    // [AI-NOTE-2026-10-30] Solo con IA verificada por el receptor (ready/ok); nunca por defecto.
+    const label='Repetidor VO2Smart · '+(n.id||n.src)+(_gwAiReady(g)?' · dispone de IA':'');
     // [GW-LINK-FIX-2026-09-30] No pisar el aviso de sensor congelado. setSensorStale()
     // cambia el texto de la barra; re-afirmar aquí cada segundo llamaba a
     // setConnected(), que pone G._sensorStale=false y reinicia _lastO2ChangeTs:
@@ -11073,9 +11081,100 @@ function _gwSyncLink(g,now){
     // Solo se baja lo que el gateway levantó: con BLE, serial o demo activos, la
     // barra es de ellos.
     if(!_gwBleLive()&&!G.bleCh&&!G.bleApiCh&&!G.serialConnected&&!G.simOn){
-      setConnected(false,g.port?'Gateway: sin datos del equipo':t('status_disconnected'));
+      setConnected(false,g.port?'Repetidor: sin datos del equipo':t('status_disconnected'));
     }
   }
+}
+
+// [AI-NOTE-2026-10-30] Estado de la IA del repetidor, SOLO desde lo que el receptor
+// informa en su linea `stat` (campo `ai`). Sin campo (receptor anterior) el panel
+// dice que la IA no esta incluida. Vocabulario cerrado; un
+// valor desconocido nunca se muestra como "IA activa" (R-CHG-02). Los principios son
+// de DISENO, no funciones vigentes (declaracion AS-VO2-UP-001; CLAUDE.md § IA EN EL
+// REPETIDOR): la revision de calidad por respiracion (M1) aun no existe.
+// Espejo de gateway_c6/src/AiModel.h: ready/no_sd/no_model/sha_fail/load_fail/off (R-CHG-01).
+const GW_AI_STATES={
+  // ready = modelo leido de la microSD, huella verificada y cargado; aun sin estimaciones.
+  ready:   {color:'#81c995', text:a=>'IA incluida en este repetidor · '+escHtml(a.model||'?')+' v'+escHtml(a.ver||'?')+' verificado'},
+  ok:{color:'#81c995', text:a=>'IA activa · '+escHtml(a.model||'?')+' v'+escHtml(a.ver||'?')+' · resultados rotulados «IA (estimación)»'},
+  no_sd:   {color:'#fdd663', text:()=>'IA desactivada: sin microSD'},
+  no_model:{color:'#fdd663', text:()=>'IA desactivada: modelo o ficha ausentes en la microSD'},
+  load_fail:{color:'#fdd663', text:()=>'IA desactivada: el repetidor no pudo cargar el modelo'},
+  sha_fail:{color:'#fdd663', text:()=>'IA desactivada: el modelo no pasó la verificación de integridad'},
+  off:     {color:'#9aa0a6', text:()=>'IA desactivada en este repetidor'}
+};
+function _gwAiReady(g){
+  const a=g.stat&&g.stat.ai;
+  return !!a&&(a.state==='ready'||a.state==='ok');
+}
+function _gwAiNote(g){
+  const a=g.stat&&g.stat.ai;
+  const st=a?(GW_AI_STATES[a.state]||{color:'#9aa0a6',text:()=>'IA: estado desconocido'})
+            :{color:'#9aa0a6',text:()=>'IA: no incluida en este repetidor'};
+  const state=a&&a.state;
+  const today=state==='ok'?'':state==='ready'
+    ?'<div style="margin:4px 0">Repetidor dispone de IA: modelo leído de la microSD, huella '+
+     'verificada y cargado. Aún no produce estimaciones: todos los valores mostrados son '+
+     'mediciones del equipo.</div>'
+    :'<div style="margin:4px 0">Repetidor preparado para IA embebida (en desarrollo). Esta versión '+
+     'no ejecuta modelos: todos los valores mostrados son mediciones del equipo.</div>';
+  return '<details '+(g.aiOpen?'open ':'')+'ontoggle="_gw().aiOpen=this.open" '+
+    'style="margin-bottom:6px;color:#9aa0a6"><summary style="cursor:pointer;color:'+st.color+'">'+
+    st.text(a||{})+'</summary>'+today+
+    '<div>Diseño de la IA VO2Smart:</div><ul style="margin:2px 0 0 16px;padding:0">'+
+    '<li>corre en el repetidor, sin internet</li>'+
+    '<li>revisará la calidad de cada respiración sobre la señal cruda (en desarrollo)</li>'+
+    '<li>cada modelo lleva su ficha: versión, dataset y huella SHA-256</li>'+
+    '<li>nunca modifica un valor medido</li></ul></details>';
+}
+
+// [GW-PANEL-MOVE-2026-10-31] Panel del repetidor movible y minimizable. Posicion y estado
+// minimizado se guardan en localStorage (comodidad de este navegador; si el almacenamiento
+// falla, el panel funciona igual en su esquina por defecto). Se arrastra por la barra del
+// titulo; los listeners van en la caja, que sobrevive al innerHTML de cada segundo.
+const GW_PANEL_PREFS_KEY='vo2lab.gwPanel';
+const GW_PANEL_MARGIN_PX=4;
+function _gwPanelPrefs(){
+  try{return JSON.parse(localStorage.getItem(GW_PANEL_PREFS_KEY)||'{}')||{};}catch(e){return {};}
+}
+function _gwPanelSavePrefs(p){
+  try{localStorage.setItem(GW_PANEL_PREFS_KEY,JSON.stringify(p));}catch(e){}
+}
+// Deja la caja dentro de la ventana (tras moverla, al restaurar o al cambiar el tamaño).
+function _gwPanelClamp(box,x,y){
+  const w=box.offsetWidth||220, h=box.offsetHeight||40;
+  const maxX=Math.max(GW_PANEL_MARGIN_PX,window.innerWidth-w-GW_PANEL_MARGIN_PX);
+  const maxY=Math.max(GW_PANEL_MARGIN_PX,window.innerHeight-h-GW_PANEL_MARGIN_PX);
+  box.style.left=Math.min(Math.max(GW_PANEL_MARGIN_PX,x),maxX)+'px';
+  box.style.top=Math.min(Math.max(GW_PANEL_MARGIN_PX,y),maxY)+'px';
+  box.style.right='auto'; box.style.bottom='auto';
+}
+function _gwPanelEnableDrag(box){
+  let drag=null;
+  box.addEventListener('pointerdown',e=>{
+    if(!e.target.closest('[data-gw-drag]')||e.target.closest('button,summary,a'))return;
+    const r=box.getBoundingClientRect();
+    drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+    box.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  box.addEventListener('pointermove',e=>{if(drag)_gwPanelClamp(box,e.clientX-drag.dx,e.clientY-drag.dy);});
+  const end=()=>{
+    if(!drag)return;
+    drag=null;
+    const p=_gwPanelPrefs(); p.x=parseFloat(box.style.left); p.y=parseFloat(box.style.top);
+    _gwPanelSavePrefs(p);
+  };
+  box.addEventListener('pointerup',end);
+  box.addEventListener('pointercancel',end);
+  window.addEventListener('resize',()=>{
+    if(box.style.left)_gwPanelClamp(box,parseFloat(box.style.left),parseFloat(box.style.top));
+  });
+}
+function gwPanelToggleMin(){
+  const g=_gw(); g.panelMin=!g.panelMin;
+  const p=_gwPanelPrefs(); p.min=g.panelMin; _gwPanelSavePrefs(p);
+  g.lastRender=0; _gwRender();
 }
 
 function _gwRender(){
@@ -11094,6 +11193,12 @@ function _gwRender(){
       'background:rgba(20,22,28,.94);color:#e8eaed;border:1px solid #3a3f4b;'+
       'font:12px/1.35 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.35)';
     document.body.appendChild(box);
+    const prefs=_gwPanelPrefs();
+    g.panelMin=!!prefs.min;
+    _gwPanelEnableDrag(box);
+    // La posicion guardada se aplica tras el primer dibujo: hace falta el tamaño real.
+    if(Number.isFinite(prefs.x)&&Number.isFinite(prefs.y))
+      requestAnimationFrame(()=>_gwPanelClamp(box,prefs.x,prefs.y));
   }
   if(!g.timer){
     g.timer=setInterval(function(){const gg=_gw();gg.lastRender=0;_gwRender();},1000);
@@ -11114,8 +11219,22 @@ function _gwRender(){
      'border-radius:6px;border:1px solid #8ab4f8;background:#1b3a5c;color:#e8eaed;'+
      'cursor:pointer">conectar receptor</button>';
 
-  let html='<div style="display:flex;justify-content:space-between;align-items:center;'+
-           'margin-bottom:6px"><b style="color:#8ab4f8">Gateway ESP-NOW</b>'+btn+'</div>';
+  const minBtn='<button onclick="gwPanelToggleMin()" title="'+(g.panelMin?'Expandir':'Minimizar')+
+     '" style="font:11px system-ui;padding:2px 6px;border-radius:6px;border:1px solid #5f6368;'+
+     'background:#2a2d34;color:#e8eaed;cursor:pointer">'+(g.panelMin?'▢':'▁')+'</button>';
+  let html='<div data-gw-drag title="Arrastra para mover" style="display:flex;justify-content:space-between;'+
+           'align-items:center;gap:6px;margin-bottom:'+(g.panelMin?'0':'6px')+';cursor:move;'+
+           'touch-action:none;user-select:none"><b style="color:#8ab4f8">⠿ Repetidor VO2Smart</b>'+
+           '<span style="display:flex;gap:4px">'+btn+minBtn+'</span></div>';
+  // Minimizado: una linea con lo esencial; el resto del panel no se dibuja.
+  if(g.panelMin){
+    html+='<div data-gw-drag style="color:#9aa0a6;margin-top:4px;cursor:move;touch-action:none;user-select:none">'+
+          nodes.length+' equipo(s)'+(streamDown&&g.port?' · <span style="color:#f28b82">sin stream</span>':'')+
+          (_gwAiReady(g)?' · <span style="color:#81c995">IA</span>':'')+'</div>';
+    box.innerHTML=html;
+    return;
+  }
+  html+=_gwAiNote(g);
 
   // El aviso de "sin conectar" solo si ADEMAS no hay datos: las lineas pueden
   // estar entrando por el camino wired heredado (processWiredLine las deriva
@@ -12267,8 +12386,10 @@ function buildLogRowHTML(e){
   // hace el tile d-feco2. Sin esto la tabla mostraba 0.03 donde el gas era 3.4 vol%.
   // Preserva null (S-4b): el backfill de 48 B no transporta la fracción.
   const pc100=v=>(v==null||!Number.isFinite(Number(v)))?null:Number(v)*100;
+  // [P16b] Las columnas VE y VT están rotuladas BTPS; la fila offline viene en ATPS (factor 1).
+  const atps=e._backfill?' <span style="color:var(--muted);font-size:0.6rem" title="ATPS: el dato offline no trae temperatura para pasarlo a BTPS">A</span>':'';
   return `<td>${e.t}${bf}</td><td style="font-size:0.65rem;color:var(--muted);">${phaseMap[e.phase]||'--'}</td><td${_vo2Subst?' style="color:#e04040" title="piso mínimo — medido '+safeN(e.vo2).toFixed(2)+'"':''}>${_vo2Cell.toFixed(2)}${_vo2Subst?'*':''}</td><td>${safeN(e.vco2).toFixed(2)}</td><td style="color:${rerColor}" title="gas:${safeN(e.rerGas).toFixed(3)} flow:${safeN(e.rerFlow).toFixed(3)} [${e.rerMethod||'?'}] conf:${rerConfVal}%">${rerVal.toFixed(3)}${rerClamped?' ⚠':''}</td>
-    <td>${safeN(e.ve).toFixed(1)}</td><td title="VE de los MISMOS frames BxB que produjeron VO2/VCO2 — es el denominador auditable de la fila">${safeN(e.veb).toFixed(1)}</td><td>${safeN(e.fr).toFixed(0)}</td><td>${safeN(e.vol).toFixed(3)}</td>
+    <td>${safeN(e.ve).toFixed(1)}${atps}</td><td title="VE de los MISMOS frames BxB que produjeron VO2/VCO2 — es el denominador auditable de la fila">${safeN(e.veb).toFixed(1)}</td><td>${safeN(e.fr).toFixed(0)}</td><td>${safeN(e.vol).toFixed(3)}${atps}</td>
     <td>${nn(e.hr,0)}</td><td>${safeN(e.ee).toFixed(2)}</td><td>${nn(e.fat_pct,0,'%')}</td><td>${nn(e.cho_pct,0,'%')}</td>
     <td>${nn(e.o2,2)}</td><td>${nn(pc100(e.co2),2)}</td><td>${safeN(e.bat).toFixed(0)}%</td>
     <td class="art-cell" title="${hasArtifact?decodeArtFlags(e.artFlag):''}">${hasArtifact?e.artFlag:'—'}</td>`;
@@ -12320,7 +12441,11 @@ function mergeBackfillIntoSession(records) {
       // null → la tabla pinta '--' y los promedios los ignoran. En 0 se leían como
       // medición real de cero (tu tabla mostraba FeO₂ 0.00 / FeCO₂ 0.00 en 110 filas).
       hr: null, o2: null, co2: null, fat_pct: null, cho_pct: null, bat: r.b,
-      rfm_mode: rfmNames[r.m] || 'ESTIMATED'
+      rfm_mode: rfmNames[r.m] || 'ESTIMATED',
+      // [HALLAZGOS-2026-10-26 P16b] VE y VT de esta fila están en ATPS, tal como los guardó
+      // el firmware: el DataRecord no trae temperatura para pasarlos a BTPS. Factor 1 deja
+      // explícita la base en el CSV (ATPS = VE / factor) y buildLogRowHTML() la rotula.
+      btps_factor: 1
     });
     // Poblar G.fullHist (fuente real de los gráficos). Series derivadas que el
     // backfill no trae → NaN (Chart.js las deja como hueco, no como 0).
@@ -12419,7 +12544,11 @@ function recordEntry(d){
     // frame BxB (p. ej. 14-09 16:43:03, VO₂ 3.8 con vo2_bxb 0 tras un corte de VE); '' = sin VO₂.
     // Campo ADITIVO: un consumidor que lo ignore obtiene exactamente lo de antes.
     // REVERTIR: borrar esta propiedad y la columna VO2_Fuente de exportCSV().
-    vo2_src:(safeN(d.vo2,0)>0)?((safeN(d.vo2_bxb,0)>0)?'bxb':'avg5s'):''};
+    vo2_src:(safeN(d.vo2,0)>0)?((safeN(d.vo2_bxb,0)>0)?'bxb':'avg5s'):'',
+    // [HALLAZGOS-2026-10-26 P16 · M-9] VE y VT de esta fila están en BTPS: factor aplicado
+    // por processData() (T del chip, HR supuesta 50 %). VE_BxB (veb) NO se reescala: ATPS.
+    // Campo ADITIVO. ATPS = VE / factor.
+    btps_factor:safeN(d.btpsFactor,1)};
   G.session.push(e);
   const tb=document.getElementById('log-body');
   if(!tb)return;
@@ -12947,7 +13076,7 @@ function exportXML(){
 ${styles}
 <Worksheet ss:Name="VO2SmartPRO">
 <Table>
-${titleRow('Resultados del CPET — VO2Smart PRO')}
+${titleRow('Resultados de la prueba — VO2Smart PRO')}
 ${row([strCell('')])}
 ${titleRow('Operador')}
 ${headRow('Evaluador',evalName)}
@@ -12960,7 +13089,7 @@ ${headRow('Software','VO2Smart PRO v5.0')}
 ${headRow('Patente','CL 2024024875 (activa)')}
 ${headRow('Fecha del informe',new Date().toLocaleString('es'))}
 ${row([strCell('')])}
-${titleRow('Datos de paciente')}
+${titleRow('Datos del evaluado')}
 ${headRow('Nombre completo',p.name||'--')}
 ${headRow('Apellido',apellido)}
 ${headRow('Nombres',nombres)}
@@ -13035,7 +13164,7 @@ ${measRows}
 
 function exportCSV(){
   if(!G.session.length){toast(t('toast_no_data'),'error');return;}
-  const hdrs=['Hora','Fase','Fase_VE','Etapa_Índice','Etapa','Modo_Etapa','VO2','VCO2','RER_BxB','RER_Conf%','Datos_Conf%','Gas_Válido','Meseta_VO2','Pendiente_SS_%min','R2_SS','RER_Method','RER_Gas','RER_Flow','RER_raw','VE','VE_BxB','FR','VT','FC','EE_kcalMin','Fat%','CHO%','FeO2%','FeCO2%','Bat%','ArtFlag','VO2raw','RQraw','FRraw','dO2raw','BxB_Seq','VO2_BxB','BxB_Raw','BxB_QC','BxB_Conf','BxB_CV','BxB_Src','BxB_Held','BxB_HeldReason','VO2_Piso','VO2_Mostrado','VO2_Fuente'];   // [VO2-SRC-2026-09-15] columna nueva al final
+  const hdrs=['Hora','Fase','Fase_VE','Etapa_Índice','Etapa','Modo_Etapa','VO2','VCO2','RER_BxB','RER_Conf%','Datos_Conf%','Gas_Válido','Meseta_VO2','Pendiente_SS_%min','R2_SS','RER_Method','RER_Gas','RER_Flow','RER_raw','VE','VE_BxB','FR','VT','FC','EE_kcalMin','Fat%','CHO%','FeO2%','FeCO2%','Bat%','ArtFlag','VO2raw','RQraw','FRraw','dO2raw','BxB_Seq','VO2_BxB','BxB_Raw','BxB_QC','BxB_Conf','BxB_CV','BxB_Src','BxB_Held','BxB_HeldReason','VO2_Piso','VO2_Mostrado','VO2_Fuente','Factor_BTPS_VE_VT'];   // [VO2-SRC-2026-09-15] · [P16 M-9] Factor_BTPS_VE_VT: VE y VT en BTPS (÷ factor = ATPS); VE_BxB en ATPS
   const _csvN=(v,d)=>(v==null||!Number.isFinite(Number(v)))?'':Number(v).toFixed(d);
   const rows=G.session.map(e=>[e.t,e.phase||'',e.ve_phase||'',e.stageIndex??'',e.stageLabel||'',e.stageMode||'',safeN(e.vo2).toFixed(2),safeN(e.vco2).toFixed(2),safeN(e.rer).toFixed(3),
     safeN(e.rerConf,0).toFixed(0),
@@ -13056,7 +13185,7 @@ function exportCSV(){
     safeN(e.bxb_raw,0).toFixed(2),safeN(e.bxb_qc,0).toFixed(0),
     safeN(e.bxb_conf,0).toFixed(2),safeN(e.bxb_cv,0).toFixed(2),e.bxb_src||'',
     e.bxb_display_held?1:0,(e.bxb_display_reason||'').replaceAll(',',';'),
-    e.vo2_floor||'',_csvN(e.vo2_disp,2),e.vo2_src||''].join(','));   // [VO2-SRC-2026-09-15]
+    e.vo2_floor||'',_csvN(e.vo2_disp,2),e.vo2_src||'',_csvN(e.btps_factor,4)].join(','));   // [VO2-SRC-2026-09-15] · [P16 M-9]
   const csv='\uFEFF'+[hdrs.join(','),...rows].join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
@@ -14397,7 +14526,7 @@ async function updateReport(){
   setText('rep-eval-institution', document.getElementById('u-eval-institution')?.value || '--');
 
   const pName=document.getElementById('protocol-select')?.selectedOptions[0]?.text||'--';
-  const repProtocolHeader=G.currentData.cal?(pName+' · Calorimetría: '+caloCtx.protoStr):pName;
+  const repProtocolHeader=G.currentData.cal?(pName+' · Gasto energético: '+caloCtx.protoStr):pName;
   setText('rep-protocol',repProtocolHeader);
 
   // Compute peaks: prefer live tracking, fallback to fullHist max (use reduce to avoid stack overflow)
@@ -14547,7 +14676,7 @@ async function updateReport(){
         }else if(diff>10){
           rmrBadgeClass='danger';
           rmrBadgeText='Elevado vs HB';
-          rmrNote='RMR medido superior al predicho; revisar requerimiento calórico real y contexto clínico.';
+          rmrNote='RMR medido superior al predicho; revisar requerimiento calórico real y contexto de la medición.';
         }else{
           rmrBadgeClass='warn';
           rmrBadgeText='Bajo vs HB';
@@ -14569,7 +14698,7 @@ async function updateReport(){
       }else{
         rmrBadgeClass='danger';
         rmrBadgeText='No basal';
-        rmrNote='La medición actual no corresponde a reposo basal; usarla como RMR/TMB sería clínicamente inconsistente.';
+        rmrNote='La medición actual no corresponde a reposo basal; usarla como RMR/TMB sería inconsistente.';
       }
     }
 
@@ -14903,10 +15032,10 @@ async function captureChartsForReport(){
 async function printCalorimetry(){
   // printCalorimetry() construye su HTML desde G.currentData directamente —
   // no usa el DOM del informe, por lo que updateReport() era innecesario aquí.
-  const name=document.getElementById('u-name')?.value||'Paciente';
+  const name=document.getElementById('u-name')?.value||'Evaluado';
   const date=new Date().toLocaleDateString('es');
   const c=G.currentData.cal;
-  if(!c){toast('Sin datos de calorimetría','warn');return;}
+  if(!c){toast('Sin datos de gasto energético','warn');return;}
   const caloPatient=getCalorimetryPatient(getPatient());
   const vm=getCalorimetryPresentation(c,{
     patient:caloPatient,
@@ -15090,7 +15219,7 @@ td:last-child{text-align:right;font-family:"Courier New",monospace;font-weight:7
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Calorimetría — ${name}</title>
+  <title>Gasto energético — ${name}</title>
   <style>${css2}</style>
 </head>
 <body>
@@ -15098,7 +15227,7 @@ td:last-child{text-align:right;font-family:"Courier New",monospace;font-weight:7
     <div class="topbar">
       <div>
         <div class="brand"><span>Vo₂</span>SMART PRO</div>
-        <div style="font-size:0.76rem;color:rgba(255,255,255,0.82);margin-top:2px;">Informe de Calorimetría Indirecta · ActionSmart® · Pat. CL 2024024875</div>
+        <div style="font-size:0.76rem;color:rgba(255,255,255,0.82);margin-top:2px;">Informe de gasto energético · ActionSmart® · Pat. CL 2024024875</div>
       </div>
       <div class="topmeta">
         ${name}<br>
@@ -15107,11 +15236,11 @@ td:last-child{text-align:right;font-family:"Courier New",monospace;font-weight:7
       </div>
     </div>
 
-    <div class="title">Calorimetría Indirecta — Modelo Híbrido Adaptativo</div>
+    <div class="title">Gasto energético — Modelo híbrido adaptativo</div>
 
     <div class="protocol">
       <strong>Protocolo:</strong> ${protoStr}<br>
-      <strong>Estado clínico:</strong> ${vm.ctx.isRMR?'Evaluación basal / reposo':'Evaluación metabólica no basal'}<br>
+      <strong>Condición de la medición:</strong> ${vm.ctx.isRMR?'Evaluación basal / reposo':'Evaluación metabólica no basal'}<br>
       <strong>Interpretación:</strong> ${vm.rmrNote}
     </div>
 
@@ -15190,7 +15319,7 @@ td:last-child{text-align:right;font-family:"Courier New",monospace;font-weight:7
 
       <div class="col">
         <div class="box">
-          <div class="box-title">Comparación clínica</div>
+          <div class="box-title">Comparación con ecuaciones de referencia</div>
           <div class="row"><label>RMR medido</label><span>${vm.ctx.rmrValid?vm.ctx.rmrDaily.toFixed(0)+' kcal/d':'--'}</span></div>
           <div class="row"><label>Harris-Benedict</label><span>${vm.hb>0?vm.hb.toFixed(0)+' kcal/d':'--'}</span></div>
           <div class="row"><label>Diferencia</label><span>${vm.rmrDiffStr}</span></div>
@@ -15424,7 +15553,7 @@ function updateBariatric(){
     const metaRatio = rmr / mifflin;
     if(metaRatio < 0.85)      classes.push({icon:'❄️',label:'Hipometabolismo (≤85% predicho)',sub:'Frecuente >12 meses post-bariátrica — ajustar prescripción',color:'#60a5fa'});
     else if(metaRatio > 1.15) classes.push({icon:'⚡',label:'Hipermetabolismo (≥115% predicho)',sub:'Verificar estado inflamatorio o error de medición',color:'#fbbf24'});
-    else                       classes.push({icon:'✅',label:'Metabolismo basal esperado',sub:'Acuerdo ±15% con Mifflin (rango clínicamente aceptado)',color:'#22c55e'});
+    else                       classes.push({icon:'✅',label:'Metabolismo basal esperado',sub:'Acuerdo ±15% con Mifflin (rango de acuerdo aceptado)',color:'#22c55e'});
   }
   const gridEl = document.getElementById('bari-class-grid');
   if(gridEl && classes.length){
@@ -15890,7 +16019,7 @@ function heuristicInterpretation(s){
     L.push(`• Umbrales: VT1 ${s.thresholds.vt1.toFixed(1)} / VT2 ${s.thresholds.vt2.toFixed(1)} ml/kg/min (${peak>0?(s.thresholds.vt1/peak*100).toFixed(0):'--'}% / ${peak>0?(s.thresholds.vt2/peak*100).toFixed(0):'--'}% del pico).`);
   if(s.thresholds.tau_s>0){const t=s.thresholds.tau_s;
     L.push(`• Cinética VO₂: τ ${t}s → ${t<20?'élite':t<30?'entrenado':t<45?'recreativo':'sedentario'} (Fase II, eficiencia oxidativa).`);}
-  L.push('\n— Generado localmente sin IA externa. Conecta un endpoint companion para interpretación clínica con Claude.');
+  L.push('\n— Generado localmente sin IA externa. Conecta un endpoint companion para interpretación con Claude.');
   return L.join('\n');
 }
 
@@ -16131,6 +16260,8 @@ function preBuildRow(d,seq){
     feo2:gas.feo2??null, feco2:gas.feco2??null, fio2:gas.fio2??null, fico2:gas.fico2??null,
     co2sd:gas.co2sd, nGas:w.o2.length, src:Object.assign({},gas.src,flow.src),
     dpSat:(safeN(d.bq,0)&PRE_DP_FLAGS)!==0,
+    // [PRE-SAT2-2026-10-26] tocó el riel del ADC: única condición que se trata como recorte.
+    dpRail:(safeN(d.bq,0)&BXB_UI_QC.DP_RAIL)!==0,
   };
 }
 
@@ -16209,7 +16340,7 @@ function preComputeStats(rows,key){
 }
 
 function preComputeSummary(rows,opts){
-  const sel=opts.exclSat?rows.filter(r=>!r.dpSat):rows;
+  const sel=opts.exclSat?rows.filter(r=>!r.dpRail):rows;   // [PRE-SAT2] excluye solo el riel
   const win=opts.lastN>0?sel.slice(-opts.lastN):sel;
   return PRE_FIELDS.map(f=>{
     const s=preComputeStats(win,f.k);
@@ -16246,7 +16377,7 @@ function preSegmentStages(rows){
 }
 
 function preComputeStage(stage,refVt){
-  const all=stage.rows, ok=all.filter(r=>!r.dpSat);
+  const all=stage.rows, ok=all.filter(r=>!r.dpRail);   // [PRE-SAT2] la guarda sin riel es válida
   const vt=preComputeStats(ok,'vt');
   const vtAll=preComputeStats(all,'vt');   // incluye saturadas: lo que se vio en pantalla, marcado como recortado
   const dPct=(refVt!==null&&refVt>0.01&&vt.mean!==null)?100*(vt.mean-refVt)/refVt:null;
@@ -16300,16 +16431,20 @@ function preVerdictColor(pass){ return pass===null?'':(pass?'var(--success)':'va
 // actual no trae dato, el valor queda atenuado con su antigüedad: antes se veía igual que uno
 // vigente y la fila correspondiente salía vacía (prueba 2026-10-21).
 function preRenderCards(summary){
+  const last=preCurrentRows().slice(-1)[0];
   summary.forEach(s=>{
     const v=document.getElementById('pre-c-'+s.k), u=document.getElementById('pre-cu-'+s.k);
     if(!v||!u)return;
     const stale=s.lastAge!==null&&s.lastAge>0;
-    v.textContent=preFmt(s.last,s.dec);
-    v.style.color=preVerdictColor(s.pass);
+    // [PRE-SAT-2026-10-26] VT de una respiración saturada = cota inferior.
+    const satVt=s.k==='vt'&&!stale&&!!last&&last.dpRail;   // [PRE-SAT2] solo el riel
+    v.textContent=(satVt?'≥ ':'')+preFmt(s.last,s.dec);
+    v.style.color=satVt?'var(--warn)':preVerdictColor(s.pass);
     v.style.opacity=stale?'0.45':'';
-    v.title=s.last===null?'Sin dato en las respiraciones registradas'
-      :(stale?'Valor de hace '+s.lastAge+' respiraciones: la actual no trae dato':'Última respiración');
-    u.textContent=s.unit+(stale?' · hace '+s.lastAge+' resp.':(s.mean===null?'':' · x̄ '+preFmt(s.mean,s.dec)));
+    v.title=satVt?PRE_RAIL_TIP:(s.last===null?'Sin dato en las respiraciones registradas'
+      :(stale?'Valor de hace '+s.lastAge+' respiraciones: la actual no trae dato':'Última respiración'));
+    u.textContent=s.unit+(satVt?' · posible recorte (riel de ΔP)':'')
+      +(stale?' · hace '+s.lastAge+' resp.':(s.mean===null?'':' · x̄ '+preFmt(s.mean,s.dec)));
   });
 }
 
@@ -16374,10 +16509,30 @@ function preCellHtml(r,key,dec){
     +preFmt(r[key],dec)+(der?'<sup style="color:var(--warn);">*</sup>':'')+'</td>';
 }
 
+// [PRE-SAT2-2026-10-26] Tres niveles, no dos. Medido el 26-10 en FDC0FC (K 0.723):
+//   · sin saturar ................................. VT 2.981 L (n 98)
+//   · pasó la guarda de 500 Pa SIN tocar el riel ... VT 2.958 L (n 19): ≈ −0.8 %, dentro de ±3 %
+//   · tocó el riel del ADC (546 Pa) ................ VT 2.902 L (n 65): hasta −5 % con ≥ 8 muestras
+// La marca binaria «saturado» trataba igual a las dos primeras situaciones con pérdida y
+// hacía parecer que el equipo no medía. Solo el riel se trata como recorte («≥», fuera del
+// criterio); la guarda sin riel es un aviso de límite y entra en el criterio.
+const PRE_RAIL_TIP='ΔP tocó el riel del sensor: el VT puede estar recortado (hasta −5 % el 26-10) y el volumen '
+  +'real es mayor o igual. Se muestra como cota inferior y no entra en el criterio.';
+const PRE_LIMIT_TIP='ΔP pasó la guarda de 500 Pa sin tocar el riel: medición válida, pérdida medida ≈ 1 % '
+  +'(26-10). Indica que la carrera está en el límite del rango; entra en el criterio.';
+
 function preDpCell(r){
-  return r.dpSat?'<td title="ΔP en fondo de escala: VT recortado" style="color:var(--warn);">⚠ sat</td>'
-                :'<td title="Sin saturación de ΔP">OK</td>';
+  if(r.dpRail) return '<td title="'+PRE_RAIL_TIP+'" style="color:var(--warn);">⚠ recorte (riel)</td>';
+  if(r.dpSat)  return '<td title="'+PRE_LIMIT_TIP+'" style="color:var(--muted);">límite 500 Pa</td>';
+  return '<td title="Sin saturación de ΔP">OK</td>';
 }
+
+function preVtCell(r){
+  return r.dpRail?'<td title="'+PRE_RAIL_TIP+'" style="color:var(--warn);">≥ '+preFmt(r.vt,3)+'</td>'
+                 :'<td>'+preFmt(r.vt,3)+'</td>';
+}
+
+function preDpText(r){ return r.dpRail?'recorte (riel)':(r.dpSat?'límite 500 Pa':'OK'); }
 
 function preRenderTable(rows){
   const body=document.getElementById('pre-body');
@@ -16388,7 +16543,7 @@ function preRenderTable(rows){
   }
   body.innerHTML=rows.slice(-PRE_TABLE_ROWS).reverse().map(r=>
     '<tr><td>'+r.seq+'</td><td>'+r.t_s.toFixed(1)+'</td><td>'+r.hora+'</td>'
-    +preCellHtml(r,'ve',1)+'<td>'+preFmt(r.vt,3)+'</td>'+preCellHtml(r,'fr',1)
+    +preCellHtml(r,'ve',1)+preVtCell(r)+preCellHtml(r,'fr',1)
     +preCellHtml(r,'feo2',2)+preCellHtml(r,'fio2',2)+preCellHtml(r,'feco2',2)+preCellHtml(r,'fico2',2)
     +preCellHtml(r,'co2sd',2)+preDpCell(r)+'</tr>'
   ).join('');
@@ -16398,14 +16553,15 @@ function preRenderTable(rows){
 function preCsvText(){
   const csvNum=(v,dec)=>(v===null||!isFinite(v))?'':v.toFixed(dec);
   const head='sesion,seq,t_s,hora,VE_L_min_ATPS,VT_L_ATPS,FR_min,FeO2_pct,FiO2_pct_mediana,FeCO2_pct,'
-    +'FiCO2_pct_mediana,CO2_DE_pct,n_gas,dP_saturado,origen_VE,origen_FR,origen_Fe,origen_Fi,origen_DE';
+    +'FiCO2_pct_mediana,CO2_DE_pct,n_gas,dP_saturado,origen_VE,origen_FR,origen_Fe,origen_Fi,origen_DE,'
+    +'dP_riel';   // [PRE-SAT2] columna aditiva: 1 = tocó el riel (recorte); dP_saturado conserva su significado
   const s=(r,k)=>(r.src&&r.src[k])||'fw';
   const meta='# equipo='+(PRE.device||PRE.board||'?')+' ; dP_fondo_escala_Pa='+(PRE.dpFs||'?')
     +' ; K='+(PRE.k||'?')+' ; gas: '+preFrcAssess(PRE.frc).text.replace(/,/g,';')
     +' ; exportado='+new Date().toISOString();
   const lines=PRE.rows.map(r=>[r.ses,r.seq,r.t_s.toFixed(1),r.hora,csvNum(r.ve,1),csvNum(r.vt,3),csvNum(r.fr,1),
     csvNum(r.feo2,2),csvNum(r.fio2,2),csvNum(r.feco2,2),csvNum(r.fico2,2),csvNum(r.co2sd,3),r.nGas,
-    r.dpSat?1:0,s(r,'ve'),s(r,'fr'),s(r,'fe'),s(r,'fi'),s(r,'sd')].join(','));
+    r.dpSat?1:0,s(r,'ve'),s(r,'fr'),s(r,'fe'),s(r,'fi'),s(r,'sd'),r.dpRail?1:0].join(','));
   return [meta,head].concat(lines).join('\n');
 }
 
@@ -16455,7 +16611,7 @@ function preReportHeaderHtml(meta,opts,nUsed){
     ['Ambiente', (amb.tempC!==null?amb.tempC.toFixed(1)+' °C':'—')+' · '
                  +(amb.presPa!==null?(amb.presPa/100).toFixed(0)+' hPa':'—')],
     ['Ventana analizada', (opts.lastN>0?'últimas '+opts.lastN:'todas')+' respiraciones · n = '+nUsed
-                 +(opts.exclSat?' · excluidos ciclos con ΔP saturado':'')],
+                 +(opts.exclSat?' · excluidos ciclos con recorte (ΔP en el riel)':'')],
   ];
   return '<h1>Informe de evaluación prebiológica</h1><table class="meta">'
     +rows.map(r=>'<tr><th>'+preEsc(r[0])+'</th><td>'+preEsc(r[1])+'</td></tr>').join('')+'</table>';
@@ -16476,15 +16632,16 @@ function preReportStagesHtml(stages){
   if(!stages.length)return '';
   const verdict=s=>s.pass===null?'—':(s.pass?'<span class="ok">Cumple ±'+PRE_VT_TOL_PCT+' %</span>'
                                             :'<span class="ko">Fuera de ±'+PRE_VT_TOL_PCT+' %</span>');
-  return '<h2>Resultados por etapa (FR estable)</h2><table><tr><th>Etapa</th><th>t (s)</th><th>FR</th><th>n (sat.)</th>'
-    +'<th>VT sin sat.</th><th>VT todas</th><th>CV %</th><th>Δ % VT</th><th>Criterio VT</th><th>O₂ sensor</th><th>CO₂ sensor</th><th>DE CO₂</th></tr>'
+  return '<h2>Resultados por etapa (FR estable)</h2><table><tr><th>Etapa</th><th>t (s)</th><th>FR</th><th>n (recorte)</th>'
+    +'<th>VT sin recorte</th><th>VT todas</th><th>CV %</th><th>Δ % VT</th><th>Criterio VT</th><th>O₂ sensor</th><th>CO₂ sensor</th><th>DE CO₂</th></tr>'
     +stages.map((s,i)=>'<tr><td>'+(i+1)+'</td><td>'+s.t0.toFixed(0)+'–'+s.t1.toFixed(0)+'</td><td>'+preFmt(s.fr,1)+'</td>'
       +'<td>'+s.n+(s.nSat?' ('+s.nSat+')':'')+'</td><td>'+preFmt(s.vt.mean,3)+'</td>'
       +'<td>'+preFmt(s.vtAll.mean,3)+(s.nSat?' ⚠':'')+'</td><td>'+preFmt(s.vt.cv,1)+'</td>'
       +'<td>'+preSignedPct(s.dPct)+'</td><td>'+verdict(s)+'</td><td>'+preFmt(s.o2,2)+'</td><td>'+preFmt(s.co2,2)+'</td>'
       +'<td>'+preFmt(s.co2sd,2)+'</td></tr>').join('')
-    +'</table><p class="note">VT sin sat.: media sin las respiraciones con ΔP en fondo de escala (entra en el criterio). '
-    +'VT todas: incluye las saturadas (⚠ = recortado, no entra en el criterio). '
+    +'</table><p class="note">VT sin recorte: media sin las respiraciones cuyo ΔP tocó el riel del sensor (entra en el criterio). '
+    +'Las que solo pasaron la guarda de 500 Pa sin tocar el riel («límite 500 Pa») son mediciones válidas '
+    +'(pérdida medida ≈ 1 %) y entran. VT todas: incluye las del riel (⚠ = posible recorte, no entra en el criterio). '
     +'O₂/CO₂ sensor = media de las medianas por respiración.</p>';
 }
 
@@ -16501,10 +16658,11 @@ function preReportSnapshotHtml(summary){
 function preReportBreathsHtml(rows){
   return '<h2>Respiraciones analizadas</h2><table><tr><th>#</th><th>t (s)</th><th>VE</th><th>VT</th><th>FR</th>'
     +'<th>FeO₂</th><th>FiO₂</th><th>FeCO₂</th><th>FiCO₂</th><th>DE CO₂</th><th>ΔP</th></tr>'
-    +rows.map(r=>'<tr><td>'+r.seq+'</td><td>'+r.t_s.toFixed(1)+'</td>'+preCellHtml(r,'ve',1)+'<td>'+preFmt(r.vt,3)+'</td>'
+    +rows.map(r=>'<tr><td>'+r.seq+'</td><td>'+r.t_s.toFixed(1)+'</td>'+preCellHtml(r,'ve',1)
+      +'<td>'+(r.dpRail?'≥ ':'')+preFmt(r.vt,3)+'</td>'
       +preCellHtml(r,'fr',1)+preCellHtml(r,'feo2',2)+preCellHtml(r,'fio2',2)
       +preCellHtml(r,'feco2',2)+preCellHtml(r,'fico2',2)+preCellHtml(r,'co2sd',2)
-      +'<td>'+(r.dpSat?'saturado':'OK')+'</td></tr>').join('')
+      +'<td>'+preDpText(r)+'</td></tr>').join('')
     +'</table><p class="note">* = estimación marcada (el equipo no publicó ese dato en la respiración): '
     +'Fe → gas del sensor con ΔP espiratorio; Fi → última lectura; DE → últimas 5 lecturas; '
     +'FR → 60/Δt entre respiraciones; VE → VT × FR. El origen de cada celda va en el CSV.</p>';
@@ -16522,7 +16680,7 @@ function preBuildReportHtml(){
   const opts=preReadOptions(), rows=preCurrentRows();
   const summary=preComputeSummary(rows,opts);
   const stages=preSegmentStages(rows).map(s=>preComputeStage(s,opts.refs.vt));
-  const sel=opts.exclSat?rows.filter(r=>!r.dpSat):rows;
+  const sel=opts.exclSat?rows.filter(r=>!r.dpRail):rows;   // [PRE-SAT2]
   const used=opts.lastN>0?sel.slice(-opts.lastN):sel;
   const meta=preReadReportMeta();
   // El detalle lleva TODAS las respiraciones de la sesión: antes solo las de la ventana del
@@ -16726,7 +16884,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <div class="nav-label">Inteligencia</div>
         <button class="nav-item" draggable="true" data-page="ia" onclick="goPage('ia',this)"><span class="icon">🤖</span><span>IA & Predicción</span><span class="drag-handle">⋮⋮</span></button>
         <div class="nav-label" data-i18n="nav_metabolism">Metabolismo</div>
-        <button class="nav-item" draggable="true" data-page="calorimetria" onclick="goPage('calorimetria',this)"><span class="icon">🔥</span><span data-i18n="nav_calorimetry">Calorimetría</span><span class="drag-handle">⋮⋮</span></button>
+        <button class="nav-item" draggable="true" data-page="calorimetria" onclick="goPage('calorimetria',this)"><span class="icon">🔥</span><span data-i18n="nav_calorimetry">Gasto energético</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="mss" onclick="goPage('mss',this)"><span class="icon">🆚</span><span data-i18n="nav_mss">Comparativa MSS</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="sustratos" onclick="goPage('sustratos',this)"><span class="icon">⚗️</span><span data-i18n="nav_substrates">Sustratos</span><span class="drag-handle">⋮⋮</span></button>
         <div class="nav-label" data-i18n="nav_data">Datos</div>
@@ -16736,7 +16894,9 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <button class="nav-item" draggable="true" data-page="calibracion" onclick="goPage('calibracion',this)"><span class="icon">🔬</span><span data-i18n="nav_calibration">Calibración</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="diagnostico" onclick="goPage('diagnostico',this)"><span class="icon">🔧</span><span data-i18n="nav_diagnostics">Diagnóstico</span><span class="drag-handle">⋮⋮</span></button>
         <button class="nav-item" draggable="true" data-page="informe" onclick="goPage('informe',this)"><span class="icon">📄</span><span data-i18n="nav_report">Informe</span><span class="drag-handle">⋮⋮</span></button>
-        <button class="nav-item" draggable="true" data-page="bariatrico" onclick="goPage('bariatrico',this)"><span class="icon">🏥</span><span>Bariátrico</span><span class="drag-handle">⋮⋮</span></button>
+        <!-- [USO-DECLARADO-2026-10-31] Bariátrico = uso médico, fuera de AS-VO2-UP-001: oculto del menú.
+             El código sigue para investigación; para mostrarlo, quitar style="display:none". -->
+        <button class="nav-item" draggable="true" data-page="bariatrico" style="display:none" onclick="goPage('bariatrico',this)"><span class="icon">🏥</span><span>Bariátrico</span><span class="drag-handle">⋮⋮</span></button>
       </nav>
       <div style="padding:12px;border-top:1px solid rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:6px;">
         <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="toggleSimulation()" data-i18n="nav_demo">🎲 Demo</button>
@@ -16769,7 +16929,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
       <!-- ══ PAGE: DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
         <!-- Connection notice -->
-        <div class="notice" id="dash-notice" data-i18n="dash_notice">Sin equipo conectado. Presiona "VO₂Smart BLE" en la barra superior, conecta el receptor ESP-NOW (panel Gateway) o activa el modo Demo.</div>
+        <div class="notice" id="dash-notice" data-i18n="dash_notice">Sin equipo conectado. Presiona "VO₂Smart BLE" en la barra superior, conecta el Repetidor VO2Smart (panel Repetidor) o activa el modo Demo.</div>
 
         <!-- M-8: banner de FALLA de sensor — campo "s" del stream 1 Hz (main.cpp:3160).
              bit0 canal O₂ muerto · bit3 sensor de flujo stale · bit4 tramas ΔP con CRC malo.
@@ -16948,7 +17108,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
 
         <!-- SECONDARY METRICS -->
         <div class="metrics-grid">
-          <div class="metric-mini"><div class="mm-label" data-i18n="mm_ve">VE</div><div class="mm-value" id="d-ve">--</div><div class="mm-unit">L/min</div></div>
+          <div class="metric-mini"><div class="mm-label" data-i18n="mm_ve">VE</div><div class="mm-value" id="d-ve">--</div><div class="mm-unit" title="[P16 M-9] BTPS: VE del firmware (ATPS) × factor BTPS ambiental">L/min BTPS</div></div>
           <!-- M-1: la etiqueta nombra la fuente REAL del RER mostrado (BxB / sensor de gas /
                Haldane). Fija decía "Live-RER sensor de gas" incluso cuando el valor venía del
                cálculo breath-integrated — guía del fabricante §4.3 exige distinguirlos. -->
@@ -16960,7 +17120,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           <div class="metric-mini"><div class="mm-label" data-i18n="mm_rr">Fr. Resp.</div><div class="mm-value" id="d-rr">--</div><div class="mm-unit">resp/min</div></div>
           <div class="metric-mini"><div class="mm-label">VE/VO₂</div><div class="mm-value" id="d-vevo2">--</div></div>
           <div class="metric-mini"><div class="mm-label">VE/VCO₂</div><div class="mm-value" id="d-vevco2">--</div></div>
-          <div class="metric-mini"><div class="mm-label">Vol. Tidal</div><div class="mm-value" id="d-vol">--</div><div class="mm-unit">L</div></div>
+          <div class="metric-mini"><div class="mm-label">Vol. Tidal</div><div class="mm-value" id="d-vol">--</div><div class="mm-unit" title="[P16 M-9] BTPS: VT del firmware (ATPS) × factor BTPS ambiental">L BTPS</div></div>
           <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06 (ventana espiratoria ponderada por flujo). Es la que entra en el cálculo de VO₂ — no coincide con el O₂ instantáneo del panel sensor de gas, que barre ambiente al inhalar."><div class="mm-label">FeO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feo2">--</div><div class="mm-unit">%</div></div>
           <div class="metric-mini" title="Fracción ESPIRADA conforme R-ISO-06. No coincide con el CO₂ instantáneo del panel sensor de gas."><div class="mm-label">FeCO₂ <span style="font-size:0.6rem;color:var(--muted);">espirada</span></div><div class="mm-value" id="d-feco2">--</div><div class="mm-unit">%</div></div>
           <div class="metric-mini"><div class="mm-label">PetO₂</div><div class="mm-value" id="d-peto2">--</div><div class="mm-unit">mmHg</div></div>
@@ -16980,7 +17140,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <div id="sbn-live-panel" style="margin-bottom:14px;padding:13px 15px;background:rgba(0,56,168,0.06);border:1px solid rgba(0,56,168,0.2);border-radius:10px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
             <span id="sbn-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;transition:background 0.4s;"></span>
-            <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;color:var(--muted2);text-transform:uppercase;">sensor de gas · Gas en Tiempo Real</span>
+            <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;color:var(--muted2);text-transform:uppercase;">Sensores en tiempo real</span>
             <span style="margin-left:6px;font-size:0.68rem;color:var(--muted);font-style:italic;">RER = BxB (Ec.29) → sensor de gas (Ec.30) → Haldane</span>
             <span style="margin-left:auto;font-size:0.68rem;color:var(--muted);" id="sbn-last-ts">--</span>
           </div>
@@ -17539,7 +17699,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         <div class="cmr-report" id="cmr-report">
           <div class="cmr-report-head">
             <span>📋 Tasa Metabólica en Reposo (RMR) — Informe</span>
-            <span class="cmr-pat">Paciente: <b id="cmr-patient">--</b> · <span id="cmr-timestamp">--</span></span>
+            <span class="cmr-pat">Evaluado/a: <b id="cmr-patient">--</b> · <span id="cmr-timestamp">--</span></span>
           </div>
           <div class="cmr-grid">
 
@@ -17626,7 +17786,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
 
           </div>
         </div>
-        <div class="section-header" data-i18n="cal_title">🔥 Calorimetría Indirecta — Modelo Híbrido 4 Métodos</div>
+        <div class="section-header" data-i18n="cal_title">🔥 Gasto energético por intercambio respiratorio — Modelo híbrido 4 métodos</div>
         <div class="calo-proto-protocol">
           <div class="calo-proto-protocol-head">📋 Protocolo de Medición</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
@@ -17727,7 +17887,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
 
           <div class="calo-proto-column">
             <div class="calo-proto-box" id="rmr-comparison-card" style="display:block;">
-              <div class="calo-proto-box-title">Comparación clínica</div>
+              <div class="calo-proto-box-title">Comparación con ecuaciones de referencia</div>
               <div class="calo-proto-row"><label>RMR medido</label><span id="rmr-measured">-- kcal/d</span></div>
               <div class="calo-proto-row"><label>Harris-Benedict</label><span id="rmr-hb">-- kcal/d</span></div>
               <div class="calo-proto-row"><label>Diferencia</label><span id="rmr-diff">--</span></div>
@@ -17819,7 +17979,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           Combina Weir (1949), McArdle (2015) y Frayn (1983) con pesos dinámicos según calidad de señal en tiempo real.
         </div>
         <details class="info-box" style="margin-top:8px;">
-          <summary><strong>📚 Fundamento Científico — Calorimetría Indirecta</strong></summary>
+          <summary><strong>📚 Fundamento científico — Gasto energético por intercambio respiratorio</strong></summary>
           <div style="background:var(--card2);border-radius:6px;padding:8px 12px;margin:8px 0;font-family:var(--mono);font-size:0.82rem;color:var(--accent);">
             EE (kcal/min) = 3.941 × VO₂ + 1.106 × VCO₂ <span style="color:var(--muted2);">— Weir (1949)</span>
           </div>
@@ -17851,7 +18011,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         </details>
 
         <details class="info-box" style="margin-top:8px;">
-          <summary><strong>📖 Glosario Clínico — Interpretación de Resultados</strong></summary>
+          <summary><strong>📖 Glosario — Interpretación de resultados</strong></summary>
           <div style="background:var(--card2);border-radius:6px;padding:12px;margin:8px 0;font-size:0.8rem;color:var(--text);line-height:1.6;">
             
             <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border2);">
@@ -17877,7 +18037,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
               <div style="margin-top:8px;color:var(--muted2);">
                 <div style="margin:6px 0;"><strong>RMR medido:</strong> Tasa metabólica de reposo extrapolada a 24h (kcal/día). Solo válido si protocolo = RMR y CV <5% (reposo estable).</div>
                 <div style="margin:6px 0;"><strong>Validación pendiente:</strong> El protocolo RMR está seleccionado, pero CV aún es alto. Espera 1–2 min más de reposo sin movimiento antes de confiar en el valor.</div>
-                <div style="margin:6px 0;"><strong>Harris-Benedict:</strong> Predicción clásica según edad/peso/talla. Si diferencia >10%, revisar: ¿hay condiciones clínicas? ¿medicaciones? ¿adaptación dietética anterior?</div>
+                <div style="margin:6px 0;"><strong>Harris-Benedict:</strong> Predicción clásica según edad/peso/talla. Si diferencia >10%, revisar: ¿adaptación dietética anterior? ¿entrenamiento reciente? ¿condiciones de la medición?</div>
               </div>
             </div>
 
@@ -17897,7 +18057,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                 <div style="margin:6px 0;"><strong>RMR/kg, RMR/ASC:</strong> RMR normalizado por peso (kcal/d/kg) o superficie corporal (kcal/d/m²). Permite comparar entre personas de diferente talla.</div>
                 <div style="margin:6px 0;"><strong>CHO/día, Grasa/día:</strong> Aporte energético de cada sustrato en 24h, basado en RMR medido. Ayuda a planificar macros dietéticos.</div>
                 <div style="margin:6px 0;"><strong>EE-CHO, EE-Grasa:</strong> Kcal/día aportadas por cada sustrato. Suma = RMR total.</div>
-                <div style="margin:6px 0;"><strong>Proteína (N/D):</strong> No se calcula vía calorimetría indirecta. Se estima desde dieta o análisis de urea urinaria (calorimetría proteica).</div>
+                <div style="margin:6px 0;"><strong>Proteína (N/D):</strong> No se calcula por intercambio respiratorio. Se estima desde la dieta o el nitrógeno urinario.</div>
               </div>
             </div>
 
@@ -17914,7 +18074,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
         </details>
 
         <div style="text-align:center;margin-top:10px;">
-          <button onclick="printCalorimetry()" class="btn btn-primary btn-sm" style="font-size:0.78rem;">📄 Exportar Informe Calorimetría</button>
+          <button onclick="printCalorimetry()" class="btn btn-primary btn-sm" style="font-size:0.78rem;">📄 Exportar informe de gasto energético</button>
         </div>
       </div>
 
@@ -18088,7 +18248,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
             <thead>
               <tr>
                 <th>Hora</th><th>Fase</th><th>VO₂</th><th>VCO₂</th><th title="rer_bxb: RER breath-by-breath (VCO₂/VO₂ integrado). Si RER_Method ≠ bxb_clinical, esa fila usó respaldo sensor de gas">RER BxB</th>
-                <th title="media FIFO de 8 respiraciones">VE</th><th title="VE de los mismos frames BxB que produjeron VO2/VCO2 (C-10)">VE BxB</th><th>FR</th><th>VT</th>
+                <th title="media FIFO de 8 respiraciones · BTPS (×factor ambiental, P16 M-9)">VE BTPS</th><th title="VE de los mismos frames BxB que produjeron VO2/VCO2 (C-10) · ATPS, tal como la envía el firmware">VE BxB ATPS</th><th>FR</th><th title="BTPS (×factor ambiental, P16 M-9)">VT BTPS</th>
                 <th>FC</th><th>EE kcal/min</th><th>Fat%</th><th>CHO%</th>
                 <th>FeO₂%</th><th>FeCO₂%</th><th>Bat%</th><th title="Artifact Flags">Art</th>
               </tr>
@@ -18270,9 +18430,12 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                    R teórico de config.h, que nunca fue caracterizado en banco. -->
               <div id="cal-block-laminar" style="display:none;">
 
-                <!-- K directa del LFE: valores ya caracterizados en banco. A
-                     diferencia del Venturi no salen de geometria, salen de medir
-                     R con jeringa — por eso van tabulados, no calculados. -->
+                <!-- [AUD-CAL-2026-10-26 D5] Tabla «K DIRECTA — LFE Ø20 mm» retirada de la vista:
+                     sus valores (2.090 «vigente», 2.000 «predicho STL») son de otra pieza y de
+                     otro modelo de caudal, y su botón llevaba K a 2.09 (VT ≈ ×2.9 en FDC0FC).
+                     La K por placa vive en la tarjeta «Factor K — Flujo laminar» (klam-card).
+                     Se conserva el marcado para no romper sus funciones; no se muestra. -->
+                <div id="cal-lam-kdirect" style="display:none;">
                 <div style="font-size:0.65rem;color:var(--muted);margin-bottom:6px;font-weight:700;">K DIRECTA — LFE Ø20 mm caracterizado</div>
                 <div id="laminar-presets" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
 
@@ -18292,6 +18455,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                     📡 Aplicar CORRECTION:<span id="btn-lam-kman-val">2.090</span>
                   </button>
                 </div>
+                </div><!-- /cal-lam-kdirect -->
 
                 <div style="background:rgba(20,30,50,0.04);border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:10px;">
                   <div style="font-size:0.65rem;color:var(--muted);margin-bottom:8px;font-weight:700;">PROCEDIMIENTO — jeringa de 3 L</div>
@@ -18361,6 +18525,40 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
               <div id="cal-k-result" style="margin-top:6px;font-size:0.68rem;color:var(--muted);font-family:var(--mono);min-height:16px;"></div>
             </div>
 
+            <!-- ── [K-LAM-CARD-2026-10-26] FACTOR K — FLUJO LAMINAR ──────────────────
+                 Tarjeta propia, siempre visible, con las K CARACTERIZADAS por placa
+                 (docs/K_FLUJO_LAMINAR_VALORES_2026-10-21.md). Aplica CORRECTION: directo.
+                 No reemplaza al asistente de arriba: lo deja intacto. -->
+            <div id="klam-card">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <div style="font-size:0.72rem;font-weight:800;color:#0e7490;text-transform:uppercase;letter-spacing:1px;">⚙️ Factor K — Flujo laminar (LFE)</div>
+              </div>
+              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:8px;">K medida con jeringa de 3 L en cada placa. No se copia entre placas.</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(20,30,50,0.04);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;margin-bottom:8px;">
+                <span style="font-size:0.66rem;color:var(--muted);">Equipo <b id="klam-dev" style="font-family:var(--mono);color:var(--text);">--</b></span>
+                <span style="font-size:0.66rem;color:var(--muted);">K vigente <b id="klam-now" style="font-family:var(--mono);font-size:0.95rem;color:#0e7490;">--</b></span>
+              </div>
+              <div id="klam-presets" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+              <div style="background:rgba(20,30,50,0.04);border:1px solid var(--border2);border-radius:8px;padding:10px;">
+                <div style="font-size:0.65rem;color:var(--muted);margin-bottom:6px;font-weight:700;">Desde jeringa (misma velocidad, ≥ 10 emboladas)</div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                  <span style="font-size:0.64rem;color:var(--muted);">Ref</span>
+                  <input id="klam-ref" type="number" value="3.000" min="0.5" max="10" step="0.001" oninput="klamCalc()"
+                    style="width:66px;padding:5px 6px;background:rgba(20,30,50,0.05);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;text-align:center;">
+                  <span style="font-size:0.64rem;color:var(--muted);">L · Medido</span>
+                  <input id="klam-meas" type="number" placeholder="VT" min="0.05" max="10" step="0.001" oninput="klamCalc()"
+                    style="width:66px;padding:5px 6px;background:rgba(20,30,50,0.05);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:0.8rem;text-align:center;">
+                  <span style="font-size:0.64rem;color:var(--muted);">L</span>
+                </div>
+                <div id="klam-calc-out" style="font-size:0.64rem;color:var(--muted);margin-top:6px;font-family:var(--mono);">K_nuevo = K_vigente × ref / medido</div>
+                <button id="klam-calc-btn" onclick="klamApplyCalc()" disabled
+                  style="width:100%;margin-top:8px;padding:8px;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.4);border-radius:8px;color:#0e7490;font-weight:800;font-size:0.78rem;cursor:pointer;">
+                  📡 Aplicar CORRECTION:<span id="klam-calc-val">--</span>
+                </button>
+              </div>
+              <div id="klam-result" style="margin-top:6px;font-size:0.68rem;color:var(--muted);font-family:var(--mono);min-height:16px;"></div>
+            </div>
+
             <!-- ── CHECKLIST PRE-PRUEBA ── -->
             <div>
               <div style="font-size:0.72rem;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">✅ Checklist Pre-Prueba</div>
@@ -18369,16 +18567,16 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:7px 9px;background:rgba(20,30,50,0.03);border-radius:7px;border:1px solid rgba(20,30,50,0.07);">
                   <input type="checkbox" id="chk-fw" style="margin-top:2px;accent-color:#22c55e;" onchange="updateChecklist()">
                   <div>
-                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">Firmware flasheado (lat_smp + FR)</div>
-                    <div style="font-size:0.62rem;color:var(--muted);">lat_smp 100→60 slots · FR inter-par</div>
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">Cero de ΔP verificado</div>
+                    <div style="font-size:0.62rem;color:var(--muted);">DIAG sin flujo · baseline dentro de ±0.1 Pa</div>
                   </div>
                 </label>
 
                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:7px 9px;background:rgba(20,30,50,0.03);border-radius:7px;border:1px solid rgba(20,30,50,0.07);">
                   <input type="checkbox" id="chk-d2" style="margin-top:2px;accent-color:#22c55e;" onchange="updateChecklist()">
                   <div>
-                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">D2 garganta medido con calibre digital</div>
-                    <div style="font-size:0.62rem;color:var(--muted);">Confirmar mm antes de aplicar K</div>
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">Equipo y K confirmados</div>
+                    <div style="font-size:0.62rem;color:var(--muted);">GET_CONFIG: placa correcta y K vigente de esa placa</div>
                   </div>
                 </label>
 
@@ -18401,8 +18599,8 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:7px 9px;background:rgba(20,30,50,0.03);border-radius:7px;border:1px solid rgba(20,30,50,0.07);">
                   <input type="checkbox" id="chk-syringe" style="margin-top:2px;accent-color:#22c55e;" onchange="updateChecklist()">
                   <div>
-                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">Jeringa 3L en modo EJERCICIO realizada</div>
-                    <div style="font-size:0.62rem;color:var(--muted);">SET_PHASE:EXERCISE antes · VT ≈ 2.7–3.0 L</div>
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text);">Verificación de jeringa 3 L del día</div>
+                    <div style="font-size:0.62rem;color:var(--muted);">≥ 10 emboladas · VT dentro de ±2 % · la fase no influye (R-FW-13)</div>
                   </div>
                 </label>
 
@@ -18418,7 +18616,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
                   <div id="chk-bar" style="height:6px;border-radius:3px;background:linear-gradient(90deg,#ef4444,#fbbf24);width:0%;transition:width .2s var(--ease-out),background 0.4s;"></div>
                 </div>
                 <div id="chk-warning" style="margin-top:6px;font-size:0.65rem;color:#c62828;display:none;"></div>
-                <div id="chk-ok" style="margin-top:6px;font-size:0.65rem;color:#1a7f37;display:none;">✅ Listo para prueba clínica</div>
+                <div id="chk-ok" style="margin-top:6px;font-size:0.65rem;color:#1a7f37;display:none;">✅ Listo para la prueba</div>
               </div>
             </div>
           </div>
@@ -18652,7 +18850,8 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
 
         function updateChecklist() {
           const ids = ['chk-fw','chk-d2','chk-calo2','chk-calco2','chk-syringe'];
-          const labels = ['Firmware flash','D2 medido','CAL_O2','CAL_CO2','Jeringa EXERCISE'];
+          // [AUD-CAL-2026-10-26 D8] ítems de venturi (D2, lat_smp, SET_PHASE) reemplazados por pasos laminares; mismos id.
+          const labels = ['Cero ΔP','Equipo y K','CAL_O2','CAL_CO2','Jeringa del día'];
           let score = 0;
           ids.forEach(id => { if(document.getElementById(id)?.checked) score++; });
           const pct = (score/5*100).toFixed(0);
@@ -18672,7 +18871,7 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
             warn.style.display='block'; ok.style.display='none';
             const critical = [];
             if(!document.getElementById('chk-calco2')?.checked) critical.push('CAL_CO2 (VO₂=0 sin esto)');
-            if(!document.getElementById('chk-d2')?.checked) critical.push('Medir D2 con calibre');
+            if(!document.getElementById('chk-d2')?.checked) critical.push('Confirmar equipo y K');
             warn.textContent = '⚠️ Pendiente: '+missing.slice(0,3).join(' · ')+(missing.length>3?'…':'');
           }
         }
@@ -18741,9 +18940,126 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
           if(summary) summary.textContent = 'Flujo completo · Listo para reposo o prueba';
         }
 
+        // ── [K-LAM-CARD-2026-10-26] Factor K del flujo laminar, por placa ─────
+        // Fuente: docs/K_FLUJO_LAMINAR_VALORES_2026-10-21.md (agregar aquí cada K nueva
+        // y su origen). La K absorbe sensor, montaje y cero de UNA placa: aplicarla a
+        // otra exige confirmar (segundo clic).
+        // @espejo include/config.h LFE_K_PLAUSIBLE_MIN/MAX: fuera de esa banda el
+        // firmware responde «Implausible» y conserva la K anterior.
+        const KLAM_PLAUSIBLE_MIN = 0.60;
+        const KLAM_PLAUSIBLE_MAX = 1.60;
+        const KLAM_CONFIRM_MS = 5000;
+        const KLAM_PRESETS = [
+          { k:0.7231, board:'FDC0FC', note:'Vigente 26-10 14:31 · jeringa Cortex M9474-C, n 111, con P11b · verificada −0.8 % (n 127)', color:'#22c55e', star:true },
+          { k:0.673, board:'FDC0FC', note:'Anterior (26-10 10:00–14:31) · la escala se desplazó −7 % tras la prueba con sujeto (E8)', color:'#f59e0b' },
+          { k:0.821, board:'FDC0FC', note:'Anterior (21-10) · daba VT +22 % el 26-10 · solo para revertir', color:'#f59e0b' },
+          { k:0.652, board:'11C468', note:'Vigente 26-10 17:06 · jeringa Cortex, sin P11b · ±2 % entre FR 18 y 34, +1.9 % a FR &lt; 18', color:'#22c55e', star:true },
+          { k:0.723, board:'11C468', note:'Copiada de FDC0FC (26-10) · VT +11 % en esta placa · solo para revertir', color:'#f59e0b' },
+          { k:0.825, board:'FDC620', note:'Placa comparada con el Cortex el 13-10 · en la 11C468 daba VT +26 %', color:'#22d3ee' },
+          { k:0.856, board:'FDC0FC', note:'Heredada de otra placa (no usar)', color:'#94a3b8' },
+          { k:1.000, board:'',       note:'Default de config.h, sin calibrar', color:'#94a3b8' },
+        ];
+        let _klamPending = null;
+
+        function klamDevice() {
+          return (G.flow && G.flow.tag) || (G.currentData && G.currentData.device_id) || '';
+        }
+
+        function klamRefresh() {
+          const dev = document.getElementById('klam-dev');
+          const now = document.getElementById('klam-now');
+          if (dev) dev.textContent = klamDevice() || '--';
+          if (now) now.textContent = safeN(getActiveCorrectionK(), 0).toFixed(3);
+        }
+
+        function klamBuild() {
+          const wrap = document.getElementById('klam-presets');
+          if (!wrap) return;
+          wrap.innerHTML = '';
+          KLAM_PRESETS.forEach(p => {
+            const row = document.createElement('div');
+            row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;
+              background:${p.star?'rgba(34,197,94,0.07)':'rgba(255,255,255,0.03)'};border:${p.star?2:1}px solid ${p.color}55;`;
+            row.innerHTML = `
+              <span style="font-family:var(--mono);font-weight:800;color:${p.color};min-width:46px;">${p.k.toFixed(3)}</span>
+              <span style="flex:1;min-width:0;font-size:0.62rem;color:var(--muted);line-height:1.35;">
+                <b style="color:var(--text);">${p.board||'genérica'}</b>${p.star?' ⭐':''} · ${p.note}</span>`;
+            const btn = document.createElement('button');
+            btn.textContent = 'Aplicar';
+            btn.style.cssText = 'padding:5px 9px;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.4);border-radius:6px;color:#0e7490;font-weight:800;font-size:0.68rem;cursor:pointer;';
+            btn.onclick = () => klamApply(p.k, p.board, 'preset ' + (p.board || 'default'));
+            row.appendChild(btn);
+            wrap.appendChild(row);
+          });
+          klamRefresh();
+        }
+
+        // Segundo clic en ≤ 5 s si la K es de otra placa (o el equipo no se identificó).
+        function klamNeedsConfirm(k, board) {
+          const dev = klamDevice();
+          if (!board || (dev && dev === board)) return false;
+          const key = k.toFixed(3) + '|' + board;
+          if (_klamPending && _klamPending.key === key && Date.now() - _klamPending.t < KLAM_CONFIRM_MS) {
+            _klamPending = null;
+            return false;
+          }
+          _klamPending = { key, t: Date.now() };
+          toast(`K de ${board} y equipo ${dev||'sin identificar'}: pulsa de nuevo para confirmar`, 'warn');
+          return true;
+        }
+
+        function klamApply(k, board, origin) {
+          if (!_calO2LinkUp()) { toast('Conecta el equipo primero (BLE, USB o receptor ESP-NOW)', 'warn'); return; }
+          if (!(k >= KLAM_PLAUSIBLE_MIN && k <= KLAM_PLAUSIBLE_MAX)) {
+            toast(`K ${k.toFixed(3)} fuera de la banda del firmware [${KLAM_PLAUSIBLE_MIN}–${KLAM_PLAUSIBLE_MAX}]`, 'error');
+            return;
+          }
+          if (klamNeedsConfirm(k, board)) return;
+          const kPrev = safeN(getActiveCorrectionK(), 0);
+          const kStr = k.toFixed(3);
+          sendBLECommand('CORRECTION:' + kStr).then(ok => {
+            if (!ok) { toast('No se pudo enviar CORRECTION:' + kStr, 'error'); return; }
+            setActiveCorrectionK(k);
+            klamRefresh();
+            const el = document.getElementById('klam-result');
+            if (el) el.textContent = `✅ CORRECTION:${kStr} enviado (${origin}) · antes ${kPrev.toFixed(3)} · revertir con CORRECTION:${kPrev.toFixed(3)}`;
+            toast('K=' + kStr + ' aplicado (' + origin + ')', 'success');
+          });
+        }
+
+        function klamCalc() {
+          const ref = parseFloat(document.getElementById('klam-ref').value);
+          const meas = parseFloat(document.getElementById('klam-meas').value);
+          const out = document.getElementById('klam-calc-out');
+          const val = document.getElementById('klam-calc-val');
+          const btn = document.getElementById('klam-calc-btn');
+          const kNow = safeN(getActiveCorrectionK(), 0);
+          if (!(ref > 0) || !(meas > 0) || !(kNow > 0)) {
+            out.textContent = 'K_nuevo = K_vigente × ref / medido'; val.textContent = '--'; btn.disabled = true;
+            return null;
+          }
+          const k = kNow * ref / meas;
+          const err = (meas - ref) / ref * 100;
+          const inBand = k >= KLAM_PLAUSIBLE_MIN && k <= KLAM_PLAUSIBLE_MAX;
+          out.textContent = `K ${kNow.toFixed(3)} → ${k.toFixed(3)} · el equipo leía ${err >= 0 ? '+' : ''}${err.toFixed(1)} %`
+                          + (inBand ? '' : ' · FUERA de banda del firmware');
+          out.style.color = inBand ? 'var(--muted)' : '#dc2626';
+          val.textContent = k.toFixed(3);
+          btn.disabled = !inBand;
+          return k;
+        }
+
+        function klamApplyCalc() {
+          const k = klamCalc();
+          if (k === null) { toast('Ingresa el volumen medido', 'warn'); return; }
+          klamApply(k, klamDevice(), 'jeringa ' + document.getElementById('klam-ref').value + ' L');
+        }
+
         // Inicializar al cargar
         buildVenturiPresets();
         buildLaminarPresets();
+        klamBuild();
+        setInterval(klamRefresh, 2000);
         venturiCalcK();
         updateChecklist();
         updateCalibrationFlowGuide();
@@ -19012,8 +19328,15 @@ console.log('[VO2Smart PRO] Main script block loaded OK — BUILD 20260713-1 (au
               <!-- [W7-2026-09-02] Aquí solo se calibran LITROS: el VT del firmware no
                    aporta a esa medida y sí aporta todos los modos de fallo. -->
               <label style="font:0.66rem var(--mono);color:var(--text);display:flex;align-items:center;gap:5px;cursor:pointer;border:1px solid var(--accent);border-radius:6px;padding:3px 7px;">
-                <input type="checkbox" id="cal-dponly" onchange="calWizSetDpOnly(this.checked)" style="accent-color:#0e7490;"> K solo por ΔP (sin VT del FW)
+                <input type="checkbox" id="cal-dponly" autocomplete="off" onchange="calWizSetDpOnly(this.checked)" style="accent-color:#0e7490;"> K solo por ΔP (sin VT del FW)
               </label>
+              <!-- [AUD-CAL-2026-10-26 D2] autocomplete=off: el navegador restauraba la casilla
+                   marcada al recargar mientras el asistente arrancaba en modo firmware. -->
+              <div id="cal-dponly-warn" style="display:none;flex-basis:100%;font-size:0.66rem;color:#b91c1c;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.45);border-radius:7px;padding:6px 8px;line-height:1.45;">
+                ⚠ Modo ΔP activo: el volumen sale de la estimación del dashboard con el ΔP que llega por BLE a 1 Hz
+                (26-10, FDC0FC: −45 a −80 % en carreras de 1–3 s) y se desactiva el control VT del firmware / ΔP.
+                La K que proponga es solo orientativa: <b>no aplicarla a la placa</b>.
+              </div>
               <button id="cal-pace-btn" onclick="calPaceToggle()" class="btn btn-primary btn-sm">▶ Iniciar guía</button>
               <label style="font:0.66rem var(--mono);color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer;">
                 <input type="checkbox" id="cal-pace-loop" checked style="accent-color:#0e7490;"> repetir ida/vuelta
@@ -19786,7 +20109,9 @@ function calCO2Execute(){
                           /* [N1-2026-09-01] */ satDetected:0, shortDetected:0,
                           /* [N4-2026-09-02] */ capSuspect:0, log:[],
                           /* [N6-2026-09-02] */ lowDetected:0,
-                          /* [D3-2026-09-02] */ staleDetected:0 };
+                          /* [D3-2026-09-02] */ staleDetected:0,
+                          /* [AUD-CAL-2026-10-26 D2] modo ΔP apagado por defecto · D9 K de la serie */
+                          dpOnly:false, kSeries:null };
 
         // ── DETECCIÓN AUTOMÁTICA DEL SENTIDO DE LA CARRERA ────────────────
         // El sentido no se declara: se lee del signo de ΔP corregido, que es la
@@ -19807,7 +20132,15 @@ function calCO2Execute(){
         const CAL_FLOW_NOISE_PA    = 0.12;     // 1.5× LFE_DP_ZERO_ACC_PA (0.08), NO el umbral del FW
         // [N1-2026-09-01] Guardarraíles nuevos de la embolada. Ver bloque REVISIÓN abajo.
         const CAL_STROKE_MIN_MS    = 1500;     // embolada más corta ⇒ satura el sensor de flujo
-        const CAL_DP_SAT_PA        = 125.0;    // [GUARD-FS-2026-09-14] espejo de sdpUsablePa() = FS nominal (antes 118)
+        // [HALLAZGOS-2026-10-26 P7] La guarda sale del fondo de escala que informa el equipo
+        // (DIAG.dp_fs = sdpUsablePa(): 125 con el sensor de 125 Pa, 500 con el de 500 Pa).
+        // Antes era 125 fijo: en una placa de 500 Pa rechazaba como «saturada» toda embolada
+        // con pico > 125 Pa. Sin DIAG todavía → 125, el valor más conservador.
+        const CAL_DP_SAT_PA_DEFAULT = 125.0;   // [GUARD-FS-2026-09-14] espejo de sdpUsablePa() con scale 240
+        function calDpSatPa(){
+          const fs = safeN(G.flow && G.flow.dpFs, 0);
+          return fs > 0 ? fs : CAL_DP_SAT_PA_DEFAULT;
+        }
         const CAL_STALE_FRAC       = 0.005;    // [W1] 0.5 % del patrón: dos VT del FW más
                                                // juntos que esto son la MISMA lectura
         const _calFlow = { buf:[], lastPktSeq:0, armed:false, lastDet:null,
@@ -19908,7 +20241,7 @@ function calCO2Execute(){
           // Trapecio sobre las muestras en orden cronologico (R-FW-05). [W17] `run` ya
           // llega en orden cronologico desde _calFlowRuns(); antes se llenaba hacia
           // atras y habia que invertirlo aqui.
-          const capLs=(safeN(G.currentData?.phase,0)===1)?PACE_CAP_EXERCISE_LS:PACE_CAP_REST_LS;
+          const capLs=paceCapLs();
           const capLmin=capLs*60;
           let volDp=0, volCap=0, qPeak=0;
           for(let j=1;j<run.length;j++){
@@ -20220,7 +20553,25 @@ function calCO2Execute(){
           _calWiz.lowDetected=0; _calFlow.lastRunTs=0;     // [N6-2026-09-02]
           _calWiz.staleDetected=0;                         // [D3-2026-09-02]
           _calWiz.mismatchDetected=0;                      // [C3-2026-09-02]
+          _calWiz.kSeries=null;                            // [AUD-CAL-2026-10-26 D9]
           _calFlow.buf=[]; _calFlow.lastDet=null;
+        }
+
+        /* [AUD-CAL-2026-10-26 D9] Una serie se mide con UNA sola K. Si la K de la placa
+           cambió desde la primera carrera, la serie anterior se cierra al llegar la
+           primera carrera nueva (no al confirmar el CORRECTION: calWizApplyK() y el
+           informe de flujo todavía leen la serie anterior después del eco). El 26-10
+           la serie mezcló K 0.673 y 0.7231 y su mediana (2.809 L) no era de ninguna. */
+        function _calWizGuardSeriesK(){
+          const kNow=getActiveCorrectionK();
+          const hasSeries=_calWiz.captures.length||_calWiz.log.length;
+          if(hasSeries && _calWiz.kSeries!==null && Math.abs(kNow-_calWiz.kSeries)>0.0005){
+            const kOld=_calWiz.kSeries;
+            _calWizClearCaptures();
+            toast('Serie nueva: la K de la placa cambió de '+kOld.toFixed(3)+' a '+kNow.toFixed(3)
+                  +'. Las carreras anteriores no se mezclan con las nuevas.','info',7000);
+          }
+          if(!_calWiz.captures.length && !_calWiz.log.length) _calWiz.kSeries=kNow;
         }
 
         /* ═══════════════════════════════════════════════════════════════════════
@@ -20274,9 +20625,18 @@ function calCO2Execute(){
            Espejo: saturación 125 Pa → 248.5 L/min = 4.142 L/s (Forchheimer inversa con R y K2
            de config.h, K = 1). Los dos "cap" quedan iguales y por encima de la saturación,
            así que el pacer queda limitado por el sensor (binding «saturación 125 Pa»). */
-        const PACE_Q_SAT_LS        = 4.142;                 // ΔP 125 Pa (antes 4.011 @118 Pa)
-        const PACE_CAP_REST_LS     = PACE_Q_SAT_LS * 1.05;  // antes 4.011 (VOLFLOW_CAP_REST, eliminado)
-        const PACE_CAP_EXERCISE_LS = PACE_Q_SAT_LS * 1.05;  // antes 5.0   (VOLFLOW_CAP_EXERCISE, eliminado)
+        // [HALLAZGOS-2026-10-26 P7] Antes 4.142 fijo (ΔP 125 Pa con R y K2 de config.h, K = 1).
+        // Ahora es la inversa de Forchheimer a la guarda del equipo, con el R y K2 de su placa
+        // (calLfeModel, P11): 125 Pa → 4.142 L/s; 500 Pa con FDC0FC → ~8.5 L/s.
+        // El cap del firmware es la guarda × K × 1.05 (R-FW-15): mismo factor aquí.
+        function paceQSatLs(){
+          const m = calLfeModel(), dp = calDpSatPa();
+          // [AUD-CAL-2026-10-26 D4] × K vigente: el firmware publica Q_modelo × K. Sin K el
+          // límite salía en 576 L/min con FDC0FC, cuando satura a ≈ 416 L/min reales.
+          const k = safeN(getActiveCorrectionK(),1.0) || 1.0;
+          return (-m.R + Math.sqrt(m.R*m.R + 4*m.K2*dp)) / (2*m.K2) * calLfeLinFactor(dp) * k / 60;   // [P11b]
+        }
+        function paceCapLs(){ return paceQSatLs() * 1.05; }   // REST y EXERCISE iguales desde 2026-09-14
         const PACE_HEADROOM        = 0.90;   // 10 % bajo el límite que muerda
         const PACE_LEADIN_MS       = 3000;   // cuenta atrás antes de cada carrera
         const PACE_HOLD_MS         = 700;    // pausa en el tope antes de invertir
@@ -20403,9 +20763,12 @@ function calCO2Execute(){
             toast('Serie reiniciada: cambió la fuente del volumen','info');
           }
           _calWiz.dpOnly=!!on;
-          toast(on?'Modo ΔP: K de la estimación del dashboard, ambas ramas. ORIENTATIVO '
-                  +'(IC95 ~±10 % con n=12) — para ±3 % usa la vía de raw.bin a 50 Hz.'
-                 :'Modo VT del firmware: K del VT publicado a 1 Hz.', on?'warn':'info');
+          // [AUD-CAL-2026-10-26 D2] Aviso permanente mientras esté activo, no solo un toast.
+          const _w=document.getElementById('cal-dponly-warn');
+          if(_w)_w.style.display=on?'block':'none';
+          toast(on?'Modo ΔP: K de la estimación del dashboard a 1 Hz, ambas ramas. NO aplicar esa K '
+                  +'a la placa: el 26-10 esta ruta dio −45 a −80 % en carreras de 1–3 s.'
+                 :'Modo VT del firmware: K del VT publicado por el equipo.', on?'warn':'info');
           _calWizUpdateCalc();
         }
         window.calWizSetDpOnly=calWizSetDpOnly;
@@ -20474,6 +20837,32 @@ function calCO2Execute(){
            ═══════════════════════════════════════════════════════════════════════ */
         const CAL_LFE_R_PA_LMIN = 0.09580;    // LFE_R_PA_PER_LMIN (config.h)
         const CAL_LFE_K2        = 1.638e-3;   // LFE_K2_PA_PER_LMIN2 (config.h)
+        // [HALLAZGOS-2026-10-26 P11] R y K2 por placa. @espejo platformio.ini
+        // -DBOARD_LFE_R_PA_PER_LMIN / -DBOARD_LFE_K2_PA_PER_LMIN2: mover juntos (R-CHG-01).
+        // Placa sin entrada → modelo de config.h.
+        // [HALLAZGOS-2026-10-26 P11b] `lin`: tabla de linealización ΔP→Q de la placa (nodos en Pa,
+        // factor). @espejo config.h LFE_LIN_DP_PA_INIT / LFE_LIN_FACTOR_INIT y reprocess_raw.py
+        // LFE_LIN_BY_BOARD; tools/test_lfe_linealizacion.py verifica que coincidan.
+        const CAL_LFE_MODEL_BY_BOARD = {
+          FDC0FC: { R: 0.07906, K2: 1.771e-3,
+                    lin: { dp: [0, 10, 35, 70, 120, 180, 250, 500],
+                           f:  [1.0162, 0.9945, 0.9815, 1.0177, 1.0796, 1.1125, 1.1259, 1.1301] } },
+        };
+        function calLfeModel(){
+          const tag = (G.flow && G.flow.tag) || (G.currentData && G.currentData.device_id) || '';
+          return CAL_LFE_MODEL_BY_BOARD[tag] || { R: CAL_LFE_R_PA_LMIN, K2: CAL_LFE_K2 };
+        }
+        // Espejo de lfeLinearizationFactor() (src/FlowLinearization.h): placa sin tabla → 1.
+        function calLfeLinFactor(absDp){
+          const lin = calLfeModel().lin;
+          if(!lin) return 1;
+          const n = lin.dp, f = lin.f;
+          if(!(absDp > n[0])) return f[0];
+          for(let i=1;i<n.length;i++){
+            if(absDp <= n[i]){ const t=(absDp-n[i-1])/(n[i]-n[i-1]); return f[i-1]+t*(f[i]-f[i-1]); }
+          }
+          return f[f.length-1];
+        }
 
         /* [W18-2026-09-07] R DEPENDE DE LA TEMPERATURA — el espejo tenía R fija.
            El elemento laminar es dominado por la VISCOSIDAD, no por la densidad:
@@ -20493,11 +20882,12 @@ function calCO2Execute(){
 
         function _calRofT(){
           const Tk=safeN(G.currentData?.temp,NaN)+273.15;
-          if(!(Tk>200&&Tk<400))return CAL_LFE_R_PA_LMIN;   // sin T fiable → R_ref
+          const Rref=calLfeModel().R;
+          if(!(Tk>200&&Tk<400))return Rref;   // sin T fiable → R_ref
           const mu=CAL_SUTH_MU0
                  *((CAL_SUTH_T0_K+CAL_SUTH_S_K)/(Tk+CAL_SUTH_S_K))
                  *Math.pow(Tk/CAL_SUTH_T0_K,1.5);
-          return CAL_LFE_R_PA_LMIN*(mu/CAL_LFE_MU_REF);
+          return Rref*(mu/CAL_LFE_MU_REF);
         }
 
         // ΔP [Pa] → caudal con signo [L/min]. Espeja la rama laminar del firmware,
@@ -20506,7 +20896,8 @@ function calCO2Execute(){
           const a=Math.abs(dp);
           if(!(a>0.001))return 0;
           const R=_calRofT();
-          const q=(-R + Math.sqrt(R*R + 4*CAL_LFE_K2*a))/(2*CAL_LFE_K2);
+          const K2=calLfeModel().K2;
+          const q=(-R + Math.sqrt(R*R + 4*K2*a))/(2*K2) * calLfeLinFactor(a);   // [P11b]
           const k=safeN(getActiveCorrectionK(),1.0)||1.0;
           return (dp<0?-1:1)*q*k;
         }
@@ -20514,11 +20905,12 @@ function calCO2Execute(){
         function _calPaceBand(){
           const V   = _calWiz.syringeVol/1000;                       // L
           const ph  = safeN(G.currentData?.phase, 0);                // 0 REST · 1 EXERCISE
-          const cap = (ph === 1) ? PACE_CAP_EXERCISE_LS : PACE_CAP_REST_LS;
-          const qLim = Math.min(cap, PACE_Q_SAT_LS);
-          const binding = (cap <= PACE_Q_SAT_LS)
+          const cap = paceCapLs();
+          const qSat = paceQSatLs();
+          const qLim = Math.min(cap, qSat);
+          const binding = (cap <= qSat)
             ? ('cap FW ' + (cap*60).toFixed(0) + ' L/min')
-            : 'saturación 125 Pa';   // [GUARD-FS-2026-09-14] antes 118
+            : ('saturación ' + calDpSatPa().toFixed(0) + ' Pa');   // [P7] antes «125 Pa» fijo
           let tMin = (Math.PI/2) * V / (qLim * PACE_HEADROOM);
           tMin = Math.max(tMin, CAL_STROKE_MIN_MS/1000);
           // [W4-2026-09-02] tTarget lo fija el RANGO activo, no una constante. tMin
@@ -20541,13 +20933,13 @@ function calCO2Execute(){
                               +' s · limita '+b.binding);
           const note=document.getElementById('cal-pace-note');
           if(note){
-            if(b.phase===1){
-              note.textContent='Fase EXERCISE: cap 300 L/min — manda la saturación del sensor.';
-              note.style.color='#15803d';
-            }else{
-              note.textContent='Fase REST: cap 120 L/min recorta en silencio. Pulsa SET_PHASE:EXERCISE para ampliar la banda.';
-              note.style.color='#b45309';
-            }
+            // [HALLAZGOS-2026-10-26] El texto anterior («Fase REST: cap 120 L/min… pulsa
+            // SET_PHASE:EXERCISE») describía el tope por fase, eliminado el 2026-09-14
+            // (VOLFLOW-CAP-DERIVED, R-FW-15). Hoy el tope es la guarda del sensor × K × 1.05 y
+            // la fase no cambia ningún cálculo (R-FW-13): no hay nada que pulsar.
+            note.textContent='Tope del firmware = saturación del sensor ('+calDpSatPa().toFixed(0)
+                            +' Pa), igual en cualquier fase. No hace falta SET_PHASE.';
+            note.style.color='#15803d';
           }
           const t=document.getElementById('cal-pace-ticks');
           if(t&&!t.dataset.built){
@@ -20609,13 +21001,15 @@ function calCO2Execute(){
           const lg=document.getElementById('cal-live-legend');
           if(lg){
             const loss=det?Math.max(0,safeN(det.volDp,0)-safeN(det.volCap,0)):0;
-            lg.innerHTML='Estas barras son MEDIDAS por ΔP a 1 Hz. Contrastadas contra jeringa de '
-              +'3 L en placa 11C468 el 2026-09-02 cayeron a −1 % … −5 % del patrón, mejor de lo '
-              +'que predecía la simulación de medio seno: la embolada real es más plana y deja '
-              +'más muestras sobre el ruido. '
+            // [AUD-CAL-2026-10-26 D3] Antes citaba «−1 % … −5 %» (11C468, 125 Pa, carreras
+            // lentas, 2026-09-02); con FDC0FC a ritmo de calibración la ruta dio −45 a −80 %.
+            lg.innerHTML='Estas barras son la estimación del dashboard con el ΔP que llega por BLE a '
+              +'1 Hz: con 1–2 muestras por carrera subestiman el volumen (26-10, FDC0FC: −45 a −80 % '
+              +'en carreras de 1–3 s; solo con carreras lentas se acercan al patrón). Sirven para '
+              +'seguir el ritmo, no para medir. '
               +(_calWiz.dpOnly
                  ?'Con «K solo por ΔP» activo estas barras <b>SÍ</b> son la fuente de K, en las dos '
-                  +'ramas, y el K sale ORIENTATIVO: para ±3 % usa la vía de raw.bin a 50 Hz. '
+                  +'ramas: esa K es solo orientativa y <b>no debe aplicarse a la placa</b>. '
                  :'Con esa casilla apagada NO entran en K — K sale del VT que el firmware publica a 1 Hz. ')
               +'▨ = último VT del firmware ('+(lastFw!==null&&lastFw!==undefined?lastFw.toFixed(3)+' L':'--')+') · '
               +'marcas rojas = cap '+qCap.toFixed(0)+' L/min'
@@ -20797,12 +21191,15 @@ function calCO2Execute(){
            marcadas NO_FR: en esas tramas `vol` conserva el valor de la embolada
            ANTERIOR y tomarlo atribuiría a esta carrera un volumen ajeno. Con el bit
            puesto, la única fuente válida es `bxb_vt`. */
+        /* [HALLAZGOS-2026-10-26 P16 · M-9] `vol` llega reescalado a BTPS por processData()
+           (×1.06–1.09 según la T del chip). La jeringa está a condiciones ambiente, así
+           que aquí se usa vol_atps: el VT tal como lo integró el firmware. `bxb_vt` no se
+           reescala (ya es ATPS). Medido 2026-10-26: firmware 3.001 L → `vol` 3.172 L. */
         function _calFwVt(){
           const qc=safeN(G.currentData?.bxb_qc,0);
           if(qc&BXB_UI_QC.NO_FR) return safeN(G.currentData?.bxb_vt,0);
-          return safeN(G.currentData?.vol,0)>0
-               ? safeN(G.currentData.vol,0)
-               : safeN(G.currentData?.bxb_vt,0);
+          const volAtps=safeN(G.currentData?.vol_atps,0);
+          return volAtps>0 ? volAtps : safeN(G.currentData?.bxb_vt,0);
         }
 
         function _calWizAutoCapture(det){
@@ -20871,6 +21268,7 @@ function calCO2Execute(){
             toast('Sin evidencia de ΔP para determinar el sentido — repite la embolada','warn');
             return false;
           }
+          _calWizGuardSeriesK();   // [AUD-CAL-2026-10-26 D9]
           const target=_calWiz.syringeVol/1000;
           const _pb=_calPaceBand();
           /* [W7-2026-09-02] MODO ΔP — el VT del firmware fuera del lazo.
@@ -20963,12 +21361,13 @@ function calCO2Execute(){
             return false;
           }
           const _fwSat = seq>0 && (safeN(G.currentData?.bxb_qc,0)&BXB_UI_QC.DP_SAT)!==0;
-          const _dpSat = Math.abs(safeN(det.peak,0)) >= CAL_DP_SAT_PA;
+          const _dpSatPa = calDpSatPa();
+          const _dpSat = Math.abs(safeN(det.peak,0)) >= _dpSatPa;
           if(_fwSat || _dpSat){
             _calWiz.satDetected++;
             const _why = _fwSat
               ? 'FW: ΔP en fondo de escala durante el ciclo (bq DP_SAT)'
-              : '|ΔP| '+Math.abs(det.peak).toFixed(0)+' ≥ '+CAL_DP_SAT_PA+' Pa';
+              : '|ΔP| '+Math.abs(det.peak).toFixed(0)+' ≥ '+_dpSatPa+' Pa';
             _seal('sat',_why,_volOrEst(vol));
             toast('ΔP saturado ('+_why+'): el volumen sale corto. Embola MÁS LENTO — '
                   +'sigue la guía.','error');
@@ -21412,7 +21811,7 @@ function calCO2Execute(){
             validity:_calWizValidity(),
             minN:CAL_MIN_N, minPerRange:CAL_MIN_PER_RANGE,
             cvMinRatio:CAL_CV_MIN_RATIO, kRangeSpreadMax:CAL_K_RANGE_SPREAD,
-            strokeMinMs:CAL_STROKE_MIN_MS, dpSatPa:CAL_DP_SAT_PA,
+            strokeMinMs:CAL_STROKE_MIN_MS, dpSatPa:calDpSatPa(),
             durMsMedian:_calWizMedian(_calWiz.captures.map(c=>safeN(c.durMs,0))),
             dpPeak:_calWizMedian(_calWiz.captures.map(c=>Math.abs(safeN(c.dpPeak,0)))),
             reference:vol,k});
@@ -21953,7 +22352,7 @@ function calCO2Execute(){
           updateCalibrationLive();
           updateGasValidationLive();
           _calFlowTick();
-          const liveVol=safeN(G.currentData?.vol,0);
+          const liveVol=safeN(G.currentData?.vol_atps,0);   // [P16 · M-9] ATPS, comparable con la jeringa
           const lvEl=document.getElementById('cal-wiz-live-vt');
           if(lvEl){
             const volL=_calWiz.syringeVol/1000;
@@ -22019,7 +22418,7 @@ function calCO2Execute(){
               <input id="pre-lastn" type="number" min="0" step="1" value="10" style="width:60px;" oninput="preRenderSoon()">
               respiraciones (0 = todas)</label>
             <label title="Un ciclo con ΔP en fondo de escala tiene el VT recortado">
-              <input id="pre-excl-sat" type="checkbox" checked onchange="preRenderSoon()"> Excluir ciclos con ΔP saturado</label>
+              <input id="pre-excl-sat" type="checkbox" checked onchange="preRenderSoon()"> Excluir ciclos con recorte (ΔP en el riel)</label>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;" title="Valor esperado: volumen de la jeringa o composición de la bolsa medida con el equipo de referencia. Vacío = sin comparación">
             <span style="color:var(--muted);">Referencia:</span>
@@ -22246,11 +22645,11 @@ function calCO2Execute(){
       <!-- ══ PAGE: INFORME ══ -->
       <div class="page" id="page-informe">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <div class="section-header" style="margin-bottom:0;" data-i18n="rep_title">📄 Informe de Ergoespirometría</div>
+          <div class="section-header" style="margin-bottom:0;" data-i18n="rep_title">📄 Informe de rendimiento metabólico</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <div class="report-mode-toggle" role="group" aria-label="Tipo de informe">
-              <button id="rep-mode-a" class="report-mode-btn active" onclick="setReportMode('A')">Informe clínico · Completo</button>
-              <button id="rep-mode-b" class="report-mode-btn" onclick="setReportMode('B')">Informe clínico · Laboratorio</button>
+              <button id="rep-mode-a" class="report-mode-btn active" onclick="setReportMode('A')">Informe · Completo</button>
+              <button id="rep-mode-b" class="report-mode-btn" onclick="setReportMode('B')">Informe · Laboratorio</button>
             </div>
             <button class="btn btn-primary btn-sm" onclick="printReport()">🖨 Imprimir</button>
             <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
@@ -22269,7 +22668,7 @@ function calCO2Execute(){
               </svg>
             </div>
             <div class="report-title"><span style="color:#70d4e9;">Vo₂</span><span style="color:#486060;">SMART</span> PRO v5.0</div>
-            <div class="report-subtitle">Informe de Ergoespirometría · Calorimetría Indirecta</div>
+            <div class="report-subtitle">Informe de rendimiento metabólico · Gasto energético</div>
             <div style="margin-top:8px;">
               <!-- [HIDE-AM-2026-10-22] ver splash -->
               <span class="am-wordmark" style="display:none;"><span style="font-family:var(--display);font-size:0.9rem;font-weight:900;font-style:italic;">
@@ -22408,7 +22807,7 @@ function calCO2Execute(){
 
           <!-- CALORIMETRY — Mejora N: Calorimetría Enriquecida -->
           <div class="report-section">
-            <div class="report-section-title">🔥 Calorimetría Indirecta — Modelo Híbrido (Patente CL 2024024875)</div>
+            <div class="report-section-title">🔥 Gasto energético — Modelo híbrido (Patente CL 2024024875)</div>
             <div class="report-calo-hero">
               <div>
                 <div class="report-calo-kicker">Modelo Híbrido Oficial</div>
@@ -22469,7 +22868,7 @@ function calCO2Execute(){
 
               <div class="report-calo-column">
                 <div class="report-calo-box">
-                  <div class="report-calo-box-title">Comparación clínica</div>
+                  <div class="report-calo-box-title">Comparación con ecuaciones de referencia</div>
                   <div class="report-calo-signal-row"><label>RMR medido</label><span id="rep-rmr">-- kcal/día</span></div>
                   <div class="report-calo-signal-row"><label>RMR Harris-Benedict</label><span id="rep-rmr-hb">-- kcal/día</span></div>
                   <div class="report-calo-signal-row"><label>Diferencia</label><span id="rep-rmr-diff-clinical">--</span></div>
@@ -22628,7 +23027,7 @@ function calCO2Execute(){
               </div>
             </div>
             <div id="rep-rer-warning" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,190,11,0.12);border:1px solid rgba(255,190,11,0.35);border-radius:8px;font-size:0.78rem;color:#8a5a00;">
-              ⚠ <strong>RER fuera de rango fisiológico para reposo.</strong> Un RER > 1.05 en protocolo TMB sugiere posible fuga de aire en mascarilla, hiperventilación o artefacto del sensor de CO₂. Los valores de calorimetría pueden ser poco fiables.
+              ⚠ <strong>RER fuera de rango fisiológico para reposo.</strong> Un RER > 1.05 en protocolo TMB sugiere posible fuga de aire en mascarilla, hiperventilación o artefacto del sensor de CO₂. Los valores de gasto energético pueden ser poco fiables.
             </div>
           </div>
 
@@ -22734,11 +23133,11 @@ function calCO2Execute(){
         <div class="report-preview lab-report" id="report-content-lab" style="display:none;">
           <div class="lab-head">
             <h2><span style="color:#70d4e9;">Vo₂</span>SMART  · Informe de Laboratorio</h2>
-            <div class="lab-sub">Ergoespirometría · Resumen simple</div>
+            <div class="lab-sub">Rendimiento metabólico · Resumen simple</div>
             <div class="lab-meta">Fecha: <span id="lab-date">--</span> · Protocolo: <span id="lab-protocol">--</span> · Patente CL 2024024875</div>
           </div>
           <div class="lab-patient">
-            <span>Paciente: <b id="lab-name">--</b></span>
+            <span>Evaluado/a: <b id="lab-name">--</b></span>
             <span>Edad: <b id="lab-age">--</b></span>
             <span>Sexo: <b id="lab-sex">--</b></span>
             <span>Peso: <b id="lab-weight">--</b></span>
@@ -23204,7 +23603,7 @@ function calCO2Execute(){
       Capturar paquetes BLE crudos recibidos (datos y respuestas API)
     </label>
     <div style="padding:9px 11px;border:1px solid rgba(14,116,144,.25);background:rgba(14,116,144,.07);border-radius:8px;font-size:.72rem;color:var(--muted);margin-bottom:10px;">
-      Vía BLE: activa la casilla y mantén la conexión actual. Vía USB: conecta el mismo equipo por cable y selecciona su puerto. Ambas vías pueden capturarse a la vez; BLE continúa como fuente clínica única.
+      Vía BLE: activa la casilla y mantén la conexión actual. Vía USB: conecta el mismo equipo por cable y selecciona su puerto. Ambas vías pueden capturarse a la vez; BLE continúa como fuente única de la sesión.
     </div>
     <pre id="serial-monitor-output" style="height:300px;overflow:auto;margin:0;background:#09111f;color:#b8f7d4;border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:10px;font:11px/1.45 var(--mono);white-space:pre-wrap;">Sin trazas todavía.</pre>
     <div class="modal-actions" style="margin-top:12px;">
@@ -23226,7 +23625,7 @@ function calCO2Execute(){
       🏁 Agregar Marcador
       <span class="marker-elapsed-badge" id="marker-modal-elapsed">00:00</span>
     </div>
-    <div class="marker-modal-sub">Registre percepción de esfuerzo, síntoma u observación clínica</div>
+    <div class="marker-modal-sub">Registre percepción de esfuerzo, síntoma u observación</div>
 
     <!-- Borg RPE 6–20 -->
     <div class="marker-modal-label">Escala de Borg RPE (6–20)</div>
