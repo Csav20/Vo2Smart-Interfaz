@@ -9240,9 +9240,13 @@ function processData(d){
   // [BATT-UX-1B-2026-10-06] battIngest() antes de pintar: fija el punto de partida de la carga.
   battIngest(d.device_id, _batPct, batVf, isDemo);
   const _batUsb = batVf >= BATT_USB_V;
-  setText('d-bat', _batUsb ? t('batt_usb','USB') : (_batPct != null ? _batPct.toFixed(0) : '--'));
-  setText('d-bat-unit', _batUsb ? battChargeShort() : '%');
-  updateTopbarBattery(_batPct != null ? _batPct : 0, batVf);
+  // [BATT-FLOOR-2026-10-31] Lectura en el piso de 2.00 V: no hay celda que medir (ver BATT_FLOOR_V).
+  // Se mira la lectura RECIBIDA (batV), no la retenida (batVf): el 0.0 V del arranque y los
+  // transitorios se retienen, pero el piso de 2.00 V es persistente y debe verse.
+  const _batNone = !(bat > 0) && batV > 0 && batV < BATT_FLOOR_V;
+  setText('d-bat', _batNone ? '⚠' : _batUsb ? t('batt_usb','USB') : (_batPct != null ? _batPct.toFixed(0) : '--'));
+  setText('d-bat-unit', _batNone ? 'sin batería' : _batUsb ? battChargeShort() : '%');
+  updateTopbarBattery(_batNone ? 0 : (_batPct != null ? _batPct : 0), _batNone ? batV : batVf);
   setText('d-cal-total',G.totalCalories.toFixed(1));
   setText('d-elapsed',elapsed);
   setText('d-vo2-peak',G.vo2Peak.toFixed(1));
@@ -9821,6 +9825,16 @@ function updateTopbarBattery(pct, volts) {
   // Voltaje inválido (<3.0) NO invalida el %: firmware antiguo omite batteryV
   // pero sí envía `battery` (%). Mostrar % si >0; el sub-label V cae a '--V'.
   const _vOk = volts >= 3.0;
+  // [BATT-FLOOR-2026-10-31] batteryV en el piso de readVoltage() (2.00 V, main.cpp) = el ADC lee
+  // < 2 V: celda desconectada, agotada o dañada; el equipo vive del USB. Medido en 11C468 por el
+  // repetidor (battery 0 · batteryV 2.00). Distinto del arranque (0.0 V), que sigue en '--'.
+  if (pct <= 0 && volts > 0 && volts < BATT_FLOOR_V) {
+    fill.setAttribute('width','0');
+    if(pctEl){pctEl.textContent='⚠ sin batería';}
+    if(vEl)  vEl.textContent = volts.toFixed(1)+'V';
+    if(pill){pill.style.color='#ff4d6d';pill.style.borderColor='#ff4d6d';pill.title=BATT_FLOOR_TIP;}
+    return;
+  }
   if (pct <= 0 && !_vOk) {
     if(pctEl) pctEl.textContent = '--';
     if(vEl)   vEl.textContent   = '--V';
@@ -9854,6 +9868,10 @@ function updateTopbarBattery(pct, volts) {
 // comandos: usa solo `battery` y `batteryV`.
 // ═══════════════════════════════════════════════════════════════════════════
 const BATT_USB_V            = 4.18;  // ≥ → saturación por USB (o celda recién desconectada del cargador)
+const BATT_FLOOR_V          = 2.9;   // < y > 0 → lectura en el piso de 2.00 V de readVoltage(): sin celda
+const BATT_FLOOR_TIP        = 'Batería no detectada: el equipo lee 2.0 V en la celda (piso de medición). '+
+                              'Batería desconectada, agotada o dañada; el equipo funciona solo con USB. '+
+                              'Revisar el conector y cargar antes de usarlo sin cable.';
 const BATT_USABLE_MAH       = 1700;  // 2000 mAh × 0.85 — DURACION_BATERIA_2026-05-25 §3
 const BATT_I_TFT_ON_MA      = 349;   // operación completa — idem §4 escenario 1
 const BATT_I_TFT_OFF_MA     = 274;   // TFT apagado — escenario 2
@@ -10861,6 +10879,9 @@ function processGatewayLine(p){
     n.rssi=safeN(p.rssi,0); n.lost=safeN(p.lost,0);
     n.demo=p.demo===1||p.demo===true;
     n.vo2=safeN(d.vo2,0); n.ve=safeN(d.ve,0);
+    // [GW-BATT-2026-10-31] Batería de CADA equipo en su fila del panel: antes solo se veía la
+    // del que alimenta la sesión (barra superior), así que un equipo monitoreado no la mostraba.
+    n.bat=safeN(d.battery,0); n.batV=safeN(d.batteryV,0);
     n.rfm=d.rfm_mode||''; n.st=safeN(d.s,0);
     n.last=Date.now(); n.frames++;
     // Edad medida con el RELOJ DEL GATEWAY (rx_ms), no con la hora de llegada al
@@ -11103,6 +11124,17 @@ const GW_AI_STATES={
   sha_fail:{color:'#fdd663', text:()=>'IA desactivada: el modelo no pasó la verificación de integridad'},
   off:     {color:'#9aa0a6', text:()=>'IA desactivada en este repetidor'}
 };
+// Mismo criterio que la barra superior (updateTopbarBattery): con USB la tensión es la del
+// cargador, no la de la celda → «USB»; sin lectura todavía (arranque, batV 0) → nada.
+function _gwBattTxt(n){
+  if(n.batV>=BATT_USB_V)return '<span title="Alimentado por USB: el % de la celda no es medible">🔌 USB</span> · ';
+  if(!(n.bat>0)&&n.batV>0&&n.batV<BATT_FLOOR_V)
+    return '<span style="color:#f28b82" title="'+BATT_FLOOR_TIP+'">⚠ sin batería</span> · ';
+  if(!(n.bat>0))return '';
+  const c=n.bat>50?'#81c995':n.bat>20?'#fdd663':'#f28b82';
+  return '<span style="color:'+c+'" title="Batería del equipo">🔋 '+n.bat.toFixed(0)+' %'+
+         (n.batV>=3?' · '+n.batV.toFixed(2)+' V':'')+'</span> · ';
+}
 function _gwAiReady(g){
   const a=g.stat&&g.stat.ai;
   return !!a&&(a.state==='ready'||a.state==='ok');
@@ -11306,7 +11338,7 @@ function _gwRender(){
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;'+
            'margin-top:3px;color:#9aa0a6">'+
-        '<span>'+(n.rssi?n.rssi+' dBm':'')+(n.lost?' · perd '+n.lost:'')+
+        '<span>'+_gwBattTxt(n)+(n.rssi?n.rssi+' dBm':'')+(n.lost?' · perd '+n.lost:'')+
           (n.rfm==='ESTIMATED'?' · <span style="color:#fdd663">EST</span>':'')+
           (n.st?' · <span style="color:#f28b82">s'+n.st+'</span>':'')+'</span>'+
         (feeding
