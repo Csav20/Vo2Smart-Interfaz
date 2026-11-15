@@ -10861,6 +10861,7 @@ function _gwBleLive(){
   catch(e){return false;}
 }
 
+const GW_SEL_STALE_MS = 15000;   // equipo seleccionado sin tramas: > BREATH_TIMEOUT (12 s) + margen
 function processGatewayLine(p){
   const g=_gw();
   const kind=p.gw;
@@ -10897,6 +10898,28 @@ function processGatewayLine(p){
   if(kind==='m'&&p.id&&g.sel&&src!==g.sel){
     const selNode=g.nodes[g.sel];
     if(selNode&&selNode.id===p.id){ delete g.nodes[g.sel]; g.sel=src; }
+  }
+
+  // [GW-SEL-STALE-2026-11-15] El equipo seleccionado se calló y OTRO transmite (p. ej. se
+  // actualizó o apagó FDC620 y ahora respira alguien en FDC0FC): la sesión quedaba mostrando
+  // los últimos valores del callado, sin aviso. Sin prueba en curso se pasa al que transmite.
+  // Con prueba en curso NO: podría ser otro sujeto, y mezclar dos personas en una sesión es
+  // peor que un dato quieto; se avisa una vez y el operador elige en el panel.
+  if(kind==='m'&&!(p.demo===1||p.demo===true)&&g.sel&&src!==g.sel){
+    const selNode=g.nodes[g.sel];
+    const silentMs=selNode?nowMs-safeN(selNode.last,0):Infinity;
+    if(silentMs>GW_SEL_STALE_MS){
+      const from=selNode?(selNode.id||g.sel):g.sel, to=p.id||src;
+      const testOn=G.testState==='running'||G.testState==='paused';
+      if(!testOn){
+        g.sel=src;
+        toast('Repetidor: '+from+' sin datos hace '+Math.round(silentMs/1000)+' s → la sesión muestra ahora '+to+'.','info');
+      }else if(g._staleWarned!==g.sel+'>'+src){
+        g._staleWarned=g.sel+'>'+src;
+        toast('Repetidor: '+from+' (seleccionado) no envía datos; '+to+' sí. Hay una prueba en curso: '+
+              'toca '+to+' en el panel del repetidor si es el mismo sujeto.','warning');
+      }
+    }
   }
 
   if(kind==='m'){
@@ -10936,6 +10959,13 @@ function processGatewayLine(p){
       }
     }else if(_gwBleLive()){
       // Regla 1: el BLE manda. No se toca la sesión.
+      // [GW-SEL-STALE-2026-11-15] Decirlo una vez: si el equipo del BLE está quieto y el del
+      // repetidor respira, la sesión parece congelada sin que el operador sepa por qué.
+      if(!g._bleMonWarned){
+        g._bleMonWarned=true;
+        toast('BLE conectado: la sesión se alimenta por BLE y el repetidor solo monitorea. '+
+              'Desconecta el BLE para usar los datos del repetidor.','info');
+      }
     }else if(src===g.sel){
       processData(d);
     }
