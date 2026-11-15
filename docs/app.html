@@ -10888,6 +10888,17 @@ function processGatewayLine(p){
 
   g.lastLine=nowMs;   // para detectar el stream caido (ver _gwRender)
 
+  // [LINK-SRC-2026-11-15] La selección sigue al EQUIPO (id), no al `src`. El VO2Smart Link
+  // reenvía su copia BLE del equipo hasta que lo oye por ESP-NOW y desde ahí la calla (no
+  // duplicar): con firmware anterior del Link esa copia llegaba con la MAC Bluetooth y la
+  // trama ESP-NOW con la MAC WiFi. Si la selección quedaba en el src que se callaba, la
+  // sesión dejaba de recibir datos sin aviso. Aquí el equipo pasa al src vivo y la ficha
+  // vieja sale del panel (un equipo = una ficha).
+  if(kind==='m'&&p.id&&g.sel&&src!==g.sel){
+    const selNode=g.nodes[g.sel];
+    if(selNode&&selNode.id===p.id){ delete g.nodes[g.sel]; g.sel=src; }
+  }
+
   if(kind==='m'){
     const d=p.d||{};
     const n=g.nodes[src]||(g.nodes[src]={frames:0});
