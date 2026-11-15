@@ -10742,6 +10742,10 @@ async function connectDevice(){
       setTimeout(()=>sendBLECommand('TFT_STATE'),5200);
       // [STOR-2026-10-19] Estado de raw.bin para el panel de Registro. Slot 6000: ≥700 ms del 5200.
       setTimeout(()=>storRefresh(true),6000);
+      // [FW-UPDATE-BLE-2026-11-14] ¿Tiene el firmware publicado? Slots 7000 (GET_CONFIG) y
+      // 7800 (GET_VERSION): ≥700 ms del 6000. Si no, aviso y pestaña de actualización.
+      if(typeof _fwu==='object') _fwu.bleChecked=false;
+      setTimeout(()=>{ if(typeof fwuBleCheck==='function') fwuBleCheck(); },7000);
     }
     setTimeout(()=>cmdGetBootState(),2900);
     // Paso 1 obligatorio: wizard CAL_O2 tras conectar. El wizard pide su propio
@@ -22530,6 +22534,239 @@ function calCO2Execute(){
               <span data-i18n="diag_waiting">Esperando respuestas...</span>
             </div>
           </div>
+
+          <!-- [FW-UPDATE-2026-11-14] Actualizar firmware por USB (Web Serial + esptool-js) -->
+          <div class="metric-card" id="fwu-card" style="border:1px solid var(--border2);border-radius:var(--radius);padding:16px;">
+            <div style="font-weight:700;color:#4fc3f7;margin-bottom:8px;">⬆️ Actualizar firmware (USB)</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;line-height:1.4;">
+              Conecta el equipo por cable USB (Chrome o Edge en PC, o Android). Solo se carga el firmware
+              de <b>ese</b> equipo, firmado por VO2Smart. La calibración guardada no se toca.
+              Conectar reinicia el equipo: <b>sin prueba en curso y con la mascarilla fuera</b>.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <input id="fwu-url" type="url" placeholder="URL de la publicación (carpeta con manifest.json)"
+                     style="font-family:var(--mono);font-size:0.75rem;padding:6px;border-radius:6px;border:1px solid var(--border2);background:rgba(0,0,0,0.2);color:var(--text);">
+              <label class="btn btn-ghost btn-sm" style="border-color:rgba(79,195,247,0.4);color:#4fc3f7;text-align:center;cursor:pointer;">
+                📁 Usar publicación local (manifest.json, manifest.sig y .bin)
+                <input id="fwu-files" type="file" multiple accept=".json,.sig,.bin" style="display:none;" onchange="fwuLoadLocal(this.files)">
+              </label>
+              <button class="btn btn-ghost btn-sm" id="fwu-connect" onclick="fwuCheckDevice()" style="border-color:rgba(79,195,247,0.4);color:#4fc3f7;">🔌 Conectar y actualizar equipo</button>
+              <button class="btn btn-warn btn-sm" id="fwu-flash" onclick="fwuFlash()" disabled>⬆️ Actualizar este equipo</button>
+            </div>
+            <div id="fwu-status" style="margin-top:10px;font-size:0.85rem;font-weight:600;">Sin revisar</div>
+            <div id="fwu-log" style="font-size:0.72rem;color:var(--muted);margin-top:8px;font-family:var(--mono);max-height:140px;overflow-y:auto;background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;white-space:pre-wrap;"></div>
+          </div>
+          <script>
+          // ═══════════════════════════════════════════════════════════════════════
+          // [FW-UPDATE-2026-11-14] Actualización de firmware por USB, por placa y firmada.
+          // Espejo de tools/release/flash_from_manifest.py (misma secuencia y mismos estados):
+          //   firma del manifiesto → MAC del equipo → registro → MD5 de la flash → carga.
+          // Reglas: MAC fuera del registro = no se carga nada (el firmware de otra placa
+          // arranca sin error y mide con la física equivocada); solo la aplicación (0x10000),
+          // nunca la NVS con K/FRC/peso; después, cero sin flujo (DIAG ±0.1 Pa).
+          // Vocabulario de estado (cerrado, igual que fw_release_core.device_status):
+          //   unregistered · no_release · up_to_date · update
+          // ═══════════════════════════════════════════════════════════════════════
+          const FWU_ESPTOOL_URL = 'https://cdn.jsdelivr.net/npm/esptool-js@0.5.7/bundle.js';
+          const FWU_APP_OFFSET  = 0x10000;
+          // Clave pública de firma de VO2Smart. Va en la app y NO en la publicación: una
+          // publicación ajena no puede traer su propia clave. @consumidores tools/release
+          // (C:/Users/UCAD/.vo2smart_keys/fw_signing_p256.pem es la privada correspondiente).
+          const FWU_PUBKEY_JWK  = {kty:'EC',crv:'P-256',ext:true,
+            x:'ldZ_ATJFVHPotj_0o3Q1n8b-jw8GxvwEG0igoQWFiwA',y:'QGRrwAsuXZzJfELAwotmGG2v91jkN-obC1e5nK6vWCA'};
+          const FWU_STATUS_TXT = {
+            unregistered:['⛔ Equipo NO registrado: no se carga nada. Envía su MAC al laboratorio para registrarlo.','var(--danger,#ef5350)'],
+            no_release:  ['⚠ Equipo registrado, pero esta publicación no trae su firmware.','var(--warn)'],
+            up_to_date:  ['✅ Al día: el equipo ya tiene esta versión.','var(--success,#66bb6a)'],
+            update:      ['⬆️ Hay una versión para este equipo. Pulsa «Actualizar este equipo».','#4fc3f7'],
+          };
+          const _fwu = {files:{}, manifest:null, entry:null, loader:null, transport:null, status:null, mac:null};
+
+          function fwuLog(s){ const el=document.getElementById('fwu-log'); if(!el)return;
+            el.textContent += s + '\n'; el.scrollTop = el.scrollHeight; }
+          function fwuSetStatus(key, extra){ const el=document.getElementById('fwu-status'); if(!el)return;
+            const t=FWU_STATUS_TXT[key]||[key,'var(--muted)']; el.textContent=t[0]+(extra?' '+extra:''); el.style.color=t[1];
+            document.getElementById('fwu-flash').disabled = (key!=='update'); }
+          function fwuNormMac(m){ const h=String(m||'').replace(/[^0-9a-f]/gi,'').toUpperCase();
+            return h.length===12 ? h.match(/../g).join(':') : ''; }
+          function fwuHex(buf){ return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+          function fwuB64ToBytes(s){ const b=atob(s.trim()); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+          function fwuBinStr(u8){ let s=''; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return s; }
+
+          function fwuLoadLocal(fileList){
+            _fwu.files={};
+            [...fileList].forEach(f=>{ _fwu.files[f.name]=f; });
+            fwuLog('Publicación local: '+Object.keys(_fwu.files).join(', '));
+          }
+          async function fwuGetFile(name){
+            if(_fwu.files[name]) return new Uint8Array(await _fwu.files[name].arrayBuffer());
+            const base=(document.getElementById('fwu-url').value||'').trim().replace(/\/?$/,'/');
+            // https siempre; http solo en este PC (prueba con servidor local, sin publicar binarios).
+            if(!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/.test(base))
+              throw new Error('Falta la publicación: indica la URL (https) o elige los archivos locales.');
+            const r=await fetch(base+name,{cache:'no-store'});
+            if(!r.ok) throw new Error('No se pudo descargar '+name+' ('+r.status+')');
+            return new Uint8Array(await r.arrayBuffer());
+          }
+
+          // Firma ECDSA P-256 / SHA-256 sobre los bytes EXACTOS del manifiesto (formato r‖s).
+          async function fwuLoadManifest(){
+            const data=await fwuGetFile('manifest.json');
+            const sig=fwuB64ToBytes(new TextDecoder().decode(await fwuGetFile('manifest.sig')));
+            const key=await crypto.subtle.importKey('jwk',FWU_PUBKEY_JWK,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+            const ok=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,sig,data);
+            if(!ok) throw new Error('FIRMA INVÁLIDA: la publicación no es de VO2Smart. No se carga nada.');
+            const m=JSON.parse(new TextDecoder().decode(data));
+            fwuLog('Firma OK · versión '+m.git_commit+(m.publishable?'':' · NO publicable (solo laboratorio)'));
+            // [LEGAL-FW-2026-11-14] El aviso viaja firmado con el manifiesto y está embebido en el binario.
+            if(m.legal) fwuLog('Aviso: firmware confidencial (NDA, secreto empresarial, derecho de autor, patente CL 2024024875).');
+            return m;
+          }
+
+          function fwuDeviceStatus(m, mac, flashMd5){
+            const regMacs=Object.values(m.registry||{}).map(fwuNormMac);
+            if(!regMacs.includes(mac)) return 'unregistered';
+            const e=(m.boards||[]).find(b=>fwuNormMac(b.mac)===mac);
+            if(!e) return 'no_release';
+            return (flashMd5 && flashMd5.toLowerCase()===e.md5) ? 'up_to_date' : 'update';
+          }
+
+          async function fwuOpenLoader(){
+            if(!('serial' in navigator)) throw new Error('Este navegador no permite USB (Web Serial). Usa Chrome o Edge en PC, o Android.');
+            const mod=await import(FWU_ESPTOOL_URL);
+            const port=await navigator.serial.requestPort({filters:WIRED_PORT_FILTERS});
+            // El USB-serie de estas placas a veces no deja entrar al modo de carga en el primer
+            // intento («Failed to connect», medido 2026-11-14): se reintenta con el MISMO puerto,
+            // sin volver a pedirlo al operador.
+            for(let attempt=1; attempt<=2; attempt++){
+              try{
+                _fwu.transport=new mod.Transport(port,false);
+                _fwu.loader=new mod.ESPLoader({transport:_fwu.transport,baudrate:460800,romBaudrate:115200,
+                  terminal:{clean(){},writeLine(s){fwuLog(s);},write(s){}}});
+                fwuLog('Chip: '+await _fwu.loader.main());
+                return;
+              }catch(e){
+                fwuLog('Intento '+attempt+' sin respuesta del equipo: '+e.message);
+                try{ await _fwu.transport.disconnect(); }catch(_){}
+                _fwu.loader=null; _fwu.transport=null;
+                if(attempt===2) throw e;
+                await new Promise(r=>setTimeout(r,800));
+              }
+            }
+          }
+          async function fwuClose(reset){
+            try{ if(reset && _fwu.loader) await _fwu.loader.after('hard_reset'); }catch(e){ fwuLog('reinicio: '+e.message); }
+            try{ if(_fwu.transport) await _fwu.transport.disconnect(); }catch(e){}
+            _fwu.loader=null; _fwu.transport=null;
+          }
+
+          async function fwuCheckDevice(){
+            if(!confirm('Conectar por USB REINICIA el equipo.\n¿Sin prueba en curso y con la mascarilla fuera (sin flujo)?')) return;
+            _fwu.entry=null; fwuSetStatus('—'); document.getElementById('fwu-flash').disabled=true;
+            try{
+              _fwu.manifest=await fwuLoadManifest();
+              await fwuOpenLoader();
+              _fwu.mac=fwuNormMac(await _fwu.loader.chip.readMac(_fwu.loader));
+              fwuLog('MAC del equipo: '+_fwu.mac);
+              let st=fwuDeviceStatus(_fwu.manifest,_fwu.mac,null);
+              if(st==='update'){
+                _fwu.entry=_fwu.manifest.boards.find(b=>fwuNormMac(b.mac)===_fwu.mac);
+                const md5=await _fwu.loader.flashMd5sum(FWU_APP_OFFSET,_fwu.entry.size);
+                st=fwuDeviceStatus(_fwu.manifest,_fwu.mac,md5);
+                fwuLog('Placa '+_fwu.entry.board_tag+' · MD5 flash '+md5.slice(0,12)+'… vs publicación '+_fwu.entry.md5.slice(0,12)+'…');
+              }
+              _fwu.status=st;
+              fwuSetStatus(st, st==='unregistered'?'('+_fwu.mac+')':'');
+              if(st!=='update'){ await fwuClose(true); return; }   // nada que cargar: el equipo vuelve a arrancar
+              // Flujo de un solo botón: si corresponde, se pasa directo a la carga (que pide
+              // su propia confirmación). Cancelarla deja el botón «Actualizar» disponible.
+              await fwuFlash();
+            }catch(e){ fwuLog('ERROR: '+e.message); fwuSetStatus('—'); document.getElementById('fwu-status').textContent='Error: '+e.message; await fwuClose(true); }
+          }
+
+          // ── [FW-UPDATE-BLE-2026-11-14] Revisión automática al conectar por BLE ────────
+          // Sin USB y sin cambiar el firmware de los equipos: GET_CONFIG da la MAC y
+          // GET_VERSION la marca de compilación ("build"), única por binario. El manifiesto
+          // vigente (latest.json → manifest firmado) trae la marca de cada placa.
+          // Distinta = el equipo no tiene la versión publicada → aviso + pestaña de
+          // actualización. Corre una vez por conexión, después de la ráfaga post-conexión
+          // (R-BLE-02: ≥700 ms entre comandos) y nunca dentro del callback BLE (AP-21).
+          const FWU_REPO_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+            ? 'http://127.0.0.1:8765/'                              // prueba en este PC (servidor local)
+            : 'https://csav20.github.io/Vo2Smart-Firmware/';        // repositorio de binarios
+          const FWU_BLE_TXT = {
+            update:       'Firmware DESACTUALIZADO: este equipo debe actualizarse.',
+            unregistered: 'Equipo NO registrado para actualizaciones: envía su MAC al laboratorio.',
+            no_release:   'No hay firmware publicado para este equipo todavía.',
+          };
+          function fwuBleStatus(m, mac, build){
+            if(!Object.values(m.registry||{}).map(fwuNormMac).includes(mac)) return 'unregistered';
+            const e=(m.boards||[]).find(b=>fwuNormMac(b.mac)===mac);
+            if(!e) return 'no_release';
+            return (build && e.build===build) ? 'up_to_date' : 'update';
+          }
+          async function fwuBleCheck(){
+            if(_fwu.bleChecked) return;
+            _fwu.bleChecked=true;
+            let cfg, ver, m;
+            try{
+              cfg=await bleRequest('GET_CONFIG','GET_CONFIG',3000);
+              await new Promise(r=>setTimeout(r,800));
+              ver=await bleRequest('GET_VERSION','GET_VERSION',3000);
+            }catch(e){ console.warn('[FWU] sin respuesta del equipo:',e.message); return; }
+            try{
+              const latest=await (await fetch(FWU_REPO_URL+'latest.json',{cache:'no-store'})).json();
+              document.getElementById('fwu-url').value=FWU_REPO_URL+latest.commit+'/';
+              _fwu.files={};                       // la revisión automática usa siempre el repositorio
+              m=await fwuLoadManifest();
+            }catch(e){ console.warn('[FWU] publicación no disponible:',e.message); return; }
+            const mac=fwuNormMac(cfg.mac), st=fwuBleStatus(m,mac,ver.build);
+            fwuLog('BLE: '+(cfg.device||mac)+' · compilado '+ver.build+' · estado '+st);
+            if(st==='up_to_date') return;
+            requestAnimationFrame(()=>fwuPromptUpdate(st, cfg.device||mac, mac));
+          }
+          function fwuPromptUpdate(st, device, mac){
+            toast('⬆️ '+device+': '+FWU_BLE_TXT[st], st==='update'?'warning':'info');
+            goPage('diagnostico', document.querySelector('.nav-item[data-page="diagnostico"]'));
+            const card=document.getElementById('fwu-card');
+            if(card){
+              card.scrollIntoView({behavior:'smooth',block:'center'});
+              card.style.boxShadow='0 0 0 2px #4fc3f7';
+              setTimeout(()=>{ card.style.boxShadow=''; },6000);
+            }
+            const el=document.getElementById('fwu-status');
+            const usb=('serial' in navigator)
+              ? 'Conecta el equipo por USB a este PC y pulsa «Conectar y actualizar equipo».'
+              : 'Este navegador no permite USB: conecta el equipo por cable a un PC o Android con Chrome/Edge.';
+            el.textContent=FWU_BLE_TXT[st]+(st==='unregistered'?' (MAC '+mac+')':'')+(st==='update'?' '+usb:'');
+            el.style.color=st==='update'?'var(--warn)':'var(--muted)';
+          }
+
+          async function fwuFlash(){
+            const e=_fwu.entry;
+            if(_fwu.status!=='update' || !e || !_fwu.loader) return;
+            if(!confirm('Se cargará el firmware '+_fwu.manifest.git_commit+' en '+e.board_tag+'.\n'+
+                        '¿raw.bin descargado, sin prueba en curso y elemento SIN flujo?')) return;
+            document.getElementById('fwu-flash').disabled=true;
+            try{
+              const bin=await fwuGetFile(e.file);
+              const sha=fwuHex(await crypto.subtle.digest('SHA-256',bin));
+              if(bin.length!==e.size || sha!==e.sha256 || bin[0]!==0xE9 || e.offset!==FWU_APP_OFFSET)
+                throw new Error('Binario rechazado (tamaño, SHA-256, offset o formato no coinciden con el manifiesto).');
+              fwuLog('Binario verificado · '+bin.length+' B · cargando en 0x10000…');
+              await _fwu.loader.writeFlash({fileArray:[{data:fwuBinStr(bin),address:FWU_APP_OFFSET}],
+                flashSize:'keep',flashMode:'keep',flashFreq:'keep',eraseAll:false,compress:true,
+                reportProgress:(i,w,t)=>{ document.getElementById('fwu-status').textContent='Cargando… '+Math.round(100*w/t)+' %'; }});
+              const md5=await _fwu.loader.flashMd5sum(FWU_APP_OFFSET,e.size);
+              if(md5.toLowerCase()!==e.md5) throw new Error('La verificación después de cargar no coincide (MD5).');
+              await fwuClose(true);
+              const st=document.getElementById('fwu-status');
+              st.textContent='✅ Cargado y verificado. Deja el equipo SIN flujo ~20 s, reconecta por BLE y revisa DIAG (cero ±0.1 Pa).';
+              st.style.color='var(--success,#66bb6a)';
+              fwuLog('Listo. Firmware '+_fwu.manifest.git_commit+' en '+e.board_tag+'.');
+            }catch(err){ fwuLog('ERROR: '+err.message); document.getElementById('fwu-status').textContent='Error: '+err.message; await fwuClose(true); }
+          }
+          </script>
 
           <!-- Test Control -->
           <div class="metric-card" style="border:1px solid var(--border2);border-radius:var(--radius);padding:16px;">
