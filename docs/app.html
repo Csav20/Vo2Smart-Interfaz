@@ -11402,6 +11402,19 @@ function _gwRender(){
 // vez, `getPorts()` lo devuelve y la página lo abre sola en cada carga posterior.
 
 const GW_USB_VID = 0x303A;   // USB-Serial/JTAG nativo de Espressif (ESP32-C6)
+// [LINK-GW-USB-2026-11-14] Puertos que pueden ser un Repetidor VO2Smart:
+//   · C6: USB nativo de Espressif (cualquier PID).
+//   · VO2Smart Link en modo repetidor: CH340 (1A86:7523). Se filtra también por PID para
+//     no ofrecer los equipos TTGO, que usan CH9102 (1A86:55D4) y no son repetidores.
+// La validación por CONTENIDO de más abajo (línea `gw` en 8 s) sigue decidiendo.
+const GW_USB_FILTERS = [
+  {usbVendorId:GW_USB_VID},
+  {usbVendorId:0x1A86, usbProductId:0x7523},
+];
+function _gwPortMatches(p){
+  const i=(p.getInfo&&p.getInfo())||{};
+  return GW_USB_FILTERS.some(f=>i.usbVendorId===f.usbVendorId&&(f.usbProductId===undefined||i.usbProductId===f.usbProductId));
+}
 
 async function gwConnect(auto){
   const g=_gw();
@@ -11414,11 +11427,11 @@ async function gwConnect(auto){
   try{
     let port=null;
     const granted=await navigator.serial.getPorts();
-    port=granted.find(p=>((p.getInfo&&p.getInfo())||{}).usbVendorId===GW_USB_VID)||null;
+    port=granted.find(_gwPortMatches)||null;
     if(!port){
       // Sin autorización previa no se puede pedir el puerto sin gesto del usuario.
       if(auto)return false;
-      port=await navigator.serial.requestPort({filters:[{usbVendorId:GW_USB_VID}]});
+      port=await navigator.serial.requestPort({filters:GW_USB_FILTERS});
     }
     await port.open({baudRate:115200});
     g.port=port; g.reader=port.readable.getReader(); g.buf='';
