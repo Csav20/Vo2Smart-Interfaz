@@ -4172,6 +4172,15 @@ function applyFirmwareCompatibility(cfg={}){
   if(typeof updateCalibrationFlowGuide==='function') updateCalibrationFlowGuide();
 }
 
+// [NDA-KEYS-2026-11-14] El RER del sensor de gas viaja como `rer_gas`. Equipos y repetidores
+// sin actualizar todavía envían la clave antigua: se copia aquí, en cada entrada de datos,
+// para que el resto del dashboard use un solo nombre. (Se arma por partes: el nombre antiguo
+// no debe quedar escrito en la app publicada.)
+const _RER_KEY_OLD = 'rer_' + 's' + 'bn';
+function _rerGasAlias(d){
+  if(d && d.rer_gas===undefined && d[_RER_KEY_OLD]!==undefined) d.rer_gas=d[_RER_KEY_OLD];
+  return d;
+}
 function normalizeFirmwarePacket(packet){
   const d=Object.assign({},packet);
   // Detectar antes de GET_CONFIG: el stream legado usa "vol"; sensor de gas usa "vt".
@@ -4185,8 +4194,9 @@ function normalizeFirmwarePacket(packet){
   // Contrato interno del HTML: FeCO₂ siempre como fracción (0.04 = 4%).
   if(d.co2!==undefined&&G.fwCompat.co2Unit==='percent') d.co2=safeN(d.co2)/100;
   if(d.co2!==undefined&&safeN(d.co2)>1) d.co2=safeN(d.co2)/100;
-  d.rer=d.rer??d.rq??d.rer_sbn??0;
-  d.rer_sbn=d.rer_sbn??d.rer;
+  _rerGasAlias(d);
+  d.rer=d.rer??d.rq??d.rer_gas??0;
+  d.rer_gas=d.rer_gas??d.rer;
   // [C2-2026-09-07] `veb` = VE (ATPS, L/min) de los MISMOS frames BxB que produjeron
   // vo2/vco2. `ve` sigue siendo volumeVE_mean (media FIFO de 8 respiraciones): la fila
   // publicaba VO₂ de una agregación y VE de otra, así que VE/VO₂ no era reproducible
@@ -5666,7 +5676,7 @@ const _VD = {
   sensors: { serial:null, bt:null, bmp:null, o2:null, co2:null, flow:null },
   cfg: { weight:'--', correction:'--', o2base:20.9 },
   data: {             // mirrors BLE JSON stream variables from main.cpp
-    vo2:0, vo2max:0, vco2:0, rq:0, rer_sbn:0,
+    vo2:0, vo2max:0, vco2:0, rq:0, rer_gas:0,
     ve:0, freq:0, vol:0,
     o2:20.9, co2:0.04, temp:20, humid:50,
     fo:0, fc:0,         // FeO₂/FeCO₂ espiradas conformes R-ISO-06 (vol%); 0 = sin fracción
@@ -5803,8 +5813,8 @@ function _vtS5(ctx) { // tftScreen5 — Live BIG
   const sy=_VTC.ROW_Y+52;
   ctx.fillStyle=_VTC.SEP; ctx.fillRect(_VTC.LX,sy,_VTC.W-2*_VTC.LX,1);
   // FW tftScreen5 usa gas_rer si disponible; fallback a rer_computed (rq)
-  const rerDisp=(d.rer_sbn>0)?d.rer_sbn:d.rq;
-  const rerCol =(d.rer_sbn>0)?_VTC.ACC:_VTC.ORG;
+  const rerDisp=(d.rer_gas>0)?d.rer_gas:d.rq;
+  const rerCol =(d.rer_gas>0)?_VTC.ACC:_VTC.ORG;
   _vtBig(ctx,sy+4,'RER',rerDisp.toFixed(2),'',rerCol);
   _vtBattery(ctx);
 }
@@ -5953,7 +5963,7 @@ function vtUpdateFromData(d) {
   if(d.vo2max!==undefined) m.vo2max =+d.vo2max;
   if(d.vco2 !==undefined) m.vco2    =+d.vco2;
   if(d.rq     !==undefined) m.rq      =+d.rq;
-  if(d.rer_sbn!==undefined) m.rer_sbn =+d.rer_sbn;  // RER directo sensor de gas
+  if(d.rer_gas!==undefined) m.rer_gas =+d.rer_gas;  // RER directo sensor de gas
   if(d.ve     !==undefined) m.ve      =+d.ve;
   if(d.freq !==undefined) m.freq    =+d.freq;
   if(d.vol  !==undefined) m.vol     =+d.vol;
@@ -7251,7 +7261,7 @@ function buildSmoothedObj(samples,raw){
     o2:avgFromArray(samples,'o2',safeN(raw.o2)),
     co2:avgFromArray(samples,'co2',safeN(raw.co2)),
     rer:avgFromArray(samples,'rer',safeN(raw.rer)),
-    rer_sbn:avgFromArray(samples,'rer_sbn',safeN(raw.rer_sbn)),
+    rer_gas:avgFromArray(samples,'rer_gas',safeN(raw.rer_gas)),
     temp:safeN(raw.temp,20),pres:safeN(raw.pres,101300),
     rho:safeN(raw.rho,1.2),battery:safeN(raw.battery,100),batteryV:safeN(raw.batteryV,4.2),
     calTotal:safeN(raw.calTotal),humidity:safeN(raw.humidity,50),
@@ -8524,6 +8534,7 @@ function resetStabilityIndicator(){
 }
 
 function processData(d){
+  _rerGasAlias(d);   // [NDA-KEYS-2026-11-14] repetidor y otras rutas entran aquí
   // [PRE-2026-10-21] Antes de cualquier escalado: la evaluación prebiológica necesita
   // VE/VT en ATPS, y más abajo APPLY_AMBIENT los multiplica por BTPS en el propio `d`.
   try{ preIngestFrame(d); }catch(e){ console.warn('[PRE] ingest:', e.message); }
@@ -8589,7 +8600,7 @@ function processData(d){
         seq:_seq,ts:d._ts,
         vo2_bxb:_v,vco2_bxb:_c,rer_bxb:safeN(d.rer_bxb,0),bxb_vt:safeN(d.bxb_vt,0),
         vo2:_v,vco2:_c,                        // alias: avgFromArray() promedia por clave
-        rer:safeN(d.rer,0),rer_sbn:safeN(d.rer_sbn,0),
+        rer:safeN(d.rer,0),rer_gas:safeN(d.rer_gas,0),
         ve:safeN(d.ve,0),freq:safeN(d.freq,0),vol:safeN(d.vol,0),
         o2:safeN(d.o2,0),co2:safeN(d.co2,0),
         fo:safeN(d.fo,0),fc:safeN(d.fc,0),hr:safeN(d.hr,0)
@@ -8653,7 +8664,7 @@ function processData(d){
   // ΔO₂ Haldane → VO₂/VCO₂ dejan de ser medidas y pasan a '--'.
   const _fltRaw   = safeN(d.s, 0);
   const gasFault  = (_fltRaw & 0x01) !== 0;
-  const _sdpStale = (_fltRaw & 0x08) !== 0;
+  const _flowStale = (_fltRaw & 0x08) !== 0;
   const _sdpCrc   = (_fltRaw & 0x10) !== 0;
   // Contador de sesión: cuántas muestras entraron al historial con el canal O₂ caído.
   // NO se gatea el push a fullHist/charts — los consumidores (medias, _arrMax, OUES,
@@ -8667,7 +8678,7 @@ function processData(d){
       if(_fltRaw && !isDemo){
         const parts=[];
         if(gasFault)  parts.push('canal O₂ del sensor de gas sin dato');
-        if(_sdpStale) parts.push('sensor de flujo sin lecturas frescas');
+        if(_flowStale) parts.push('sensor de flujo sin lecturas frescas');
         if(_sdpCrc)   parts.push('tramas sensor de flujo con CRC inválido');
         setText('gas-fault-text','⚠ Fallo de sensor: '+parts.join(' · '));
         setText('gas-fault-hint', gasFault
@@ -8758,10 +8769,10 @@ function processData(d){
   // computeBreathExhaledFractions falla en el tick (BXB_DIAG win=0ms). El filtro
   // v>0 de avgFromArray descartaba esos 0 → media errática sobre muestras ralas →
   // VCO₂ y EE saltaban 0↔2.5. vco2_bxb ya viene MAD+robust del firmware (estable
-  // 0.6–1.5 en serial). Orden: vco2_bxb → sd.vco2 promediado → síntesis vo2×rer_sbn.
-  const _rerFwRef=safeN(sd.rer_sbn,0);
+  // 0.6–1.5 en serial). Orden: vco2_bxb → sd.vco2 promediado → síntesis vo2×rer_gas.
+  const _rerFwRef=safeN(sd.rer_gas,0);
   // [NO-VCO2-SYNTH-2026-09-15] Antes, sin vco2_bxb ni vco2 del tick, el tercer término fabricaba
-  // VCO₂ = VO₂ × rer_sbn. Ese número entraba en la tabla, el CSV, el JSON, EE y Fat%/CHO% como si
+  // VCO₂ = VO₂ × rer_gas. Ese número entraba en la tabla, el CSV, el JSON, EE y Fat%/CHO% como si
   // fuera medido. Evidencia: JSON 14-09 16:28:43–16:29:09 (4 filas) y 16:41:21–16:41:31 (7 filas)
   // con VCO₂ = VO₂×RER EXACTO (p. ej. 0.3×1.316 = 0.3948). Ahora: sin fuente medida → 0 explícito
   // (mismo criterio que AP-GAS-01). EE sigue calculándose con rerForEE, que no depende de vco2.
@@ -8833,24 +8844,24 @@ function processData(d){
   if (!_batInvalid && !_batSpike) G._prevBatV = batV;
   const calTotal=safeN(sd.calTotal);
 
-  // ── RER mostrado = rer_bxb (breath-by-breath, VCO₂/VO₂ integrado); respaldo = rer_sbn ──
+  // ── RER mostrado = rer_bxb (breath-by-breath, VCO₂/VO₂ integrado); respaldo = rer_gas ──
   // [ROT-RER-2026-09-14] Rotulado alineado con la prioridad real (M-1, más abajo). Solo
   // cambian etiquetas: la selección de fuente NO se tocó. Nota: el firmware ya no envía
-  // `rer` (2026-09-07) y normalizeFirmwarePacket() lo rellena con rer_sbn, así que
+  // `rer` (2026-09-07) y normalizeFirmwarePacket() lo rellena con rer_gas, así que
   // rerFwH == rerSBN y el "cross-check Haldane" es hoy degenerado — pendiente de corregir.
-  // rer_sbn: hardware sensor de gas, 0 cuando sensor calentando o gas diluido.
+  // rer_gas: hardware sensor de gas, 0 cuando sensor calentando o gas diluido.
   // sd.rer: rer_computed firmware, Haldane VCO₂/VO₂, constrained [0.65,1.30] — NO calculado en HTML.
-  const rerSBN      = safeN(sd.rer_sbn, 0);
+  const rerSBN      = safeN(sd.rer_gas, 0);
   const rerFwH      = safeN(sd.rer,     0);   // firmware Haldane (VCO₂/VO₂)
   const rerSBNValid = rerSBN >= 0.50 && rerSBN <= 1.50;
   const rerFwHValid = rerFwH >= 0.50 && rerFwH <= 1.50;
   const rerValid    = rerSBNValid || rerFwHValid;
-  // Cross-check (2026-07-23): rer_sbn hardware se sesga ALTO en reposo (ΔO₂
-  // end-tidal pequeño → ΔCO₂/ΔO₂ ruidoso; medido serial rer_sbn=0.90 con
-  // VO₂=4/VCO₂=2.6 → VCO₂/VO₂=0.65). Confiar en rer_sbn SOLO si concuerda con
+  // Cross-check (2026-07-23): rer_gas hardware se sesga ALTO en reposo (ΔO₂
+  // end-tidal pequeño → ΔCO₂/ΔO₂ ruidoso; medido serial rer_gas=0.90 con
+  // VO₂=4/VCO₂=2.6 → VCO₂/VO₂=0.65). Confiar en rer_gas SOLO si concuerda con
   // el Haldane firmware (definición VCO₂/VO₂) dentro de RER_XCHK. En reposo cae
   // a Haldane → coherente con VO₂/VCO₂ mostrados; en ejercicio (respiración
-  // profunda) ambos concuerdan → usa hardware sensor de gas. rer_sbn solo (sin Haldane)
+  // profunda) ambos concuerdan → usa hardware sensor de gas. rer_gas solo (sin Haldane)
   // se conserva como último recurso con confianza reducida.
   // ── A1 (2026-07-24 · hallazgo difusor-Venturi): Haldane firmware inválido si
   // pegado al riel del clamp [MIN_RER,MAX_RER]=[0.65,1.30] (constrain main.cpp:2388).
@@ -8867,7 +8878,7 @@ function processData(d){
   const rerFwHUsable = rerFwHValid && !rerFwHRailed && !rerFwHFrozen;
   // ── A6 (2026-07-24 · verificación serial): rer_bxb es la señal RER más limpia
   // (per-breath, QC+MAD, conf≥0.5). Serial en vivo: rer_computed congelado 1.175,
-  // rer_sbn oscila 0.87↔0 (rails 32767), pero rer_bxb=0.83–0.91 fisiológico estable.
+  // rer_gas oscila 0.87↔0 (rails 32767), pero rer_bxb=0.83–0.91 fisiológico estable.
   // Usar rer_bxb cuando SBN inválido y Haldane railed/frozen → evita perder señal buena.
   const rerBxB      = safeN(sd.rer_bxb, 0);
   const rerBxBConf  = safeN(sd.bc, 0);            // confianza BxB 0–1 (campo BLE "bc")
@@ -8887,9 +8898,9 @@ function processData(d){
   // exactamente rer_bxb. Coincide con la evidencia propia ya registrada aquí:
   //   · F-3 firmware: el registro RER hardware barre 0.5→1.5 DENTRO de cada
   //     respiración y satura a 32767 en inspiración (hubo que latchear end-tidal).
-  //   · A6 arriba: en serial en vivo rer_bxb=0.83–0.91 estable mientras rer_sbn
+  //   · A6 arriba: en serial en vivo rer_bxb=0.83–0.91 estable mientras rer_gas
   //     oscilaba 0.87↔0 y rer_computed quedaba congelado en 1.175.
-  // Por eso rer_bxb pasa de 3.ª a 1.ª prioridad. rer_sbn NO desaparece: queda
+  // Por eso rer_bxb pasa de 3.ª a 1.ª prioridad. rer_gas NO desaparece: queda
   // como control cruzado (ver rerXchkWarn) y como fallback si el BxB no tiene
   // confianza suficiente. Prioridad: BxB limpio → SBN×Haldane concordantes →
   // Haldane sano → SBN solo → 0.
@@ -9126,7 +9137,7 @@ function processData(d){
   // del hardware no sustituye al RER breath-integrated cuando hay dato de flujo).
   setText('d-rer-label',{
     bxb_clinical:'RER breath-by-breath',
-    // [ROT-RER-2026-09-14] "✓Haldane" era falso: rerFwH es alias de rer_sbn (ver arriba).
+    // [ROT-RER-2026-09-14] "✓Haldane" era falso: rerFwH es alias de rer_gas (ver arriba).
     gas_xcheck:'RER sensor de gas (respaldo)',
     haldane_fw:'RER Haldane (FW)',
     gas_only:'RER sensor de gas (respaldo)',
@@ -9196,7 +9207,7 @@ function processData(d){
   setText('d-sbn-o2',  o2.toFixed(2));
   setText('d-sbn-co2', (co2*100).toFixed(2));
   // [ROT-RER-2026-09-14] Este valor NO es el crudo del sensor: es el mismo RER de la
-  // tarjeta principal (rer_bxb; rer_sbn solo como respaldo). Se rotula su fuente real.
+  // tarjeta principal (rer_bxb; rer_gas solo como respaldo). Se rotula su fuente real.
   setText('d-sbn-rer', gasValid&&rerValid ? rerDisplay.toFixed(3) : '--');
   setText('d-sbn-rer-label', rerMethod==='bxb_clinical' ? 'RER BxB' : 'RER (respaldo)');
   setText('d-sbn-rer-sub', {bxb_clinical:'breath-by-breath · VCO₂/VO₂',gas_xcheck:'sensor de gas fin espiración · respaldo',haldane_fw:'Haldane FW · respaldo',gas_only:'sensor de gas fin espiración · respaldo',none:'sin dato'}[rerMethod]||'--');
@@ -10397,7 +10408,8 @@ function handleRemoteCommandRaw(raw){
           ' · lag O₂: '+(safeN(r.lag_o2,0)?safeN(r.lag_o2,0)+'ms':'sin medir')+
           ' · gas_ok: '+(r.gas_ok?'sí':'NO')+
           ' · t_WU: '+safeN(r.t_wu,0)+'s · uptime: '+safeN(r.uptime,0)+'s'+
-          ' · CRC ΔP: '+safeN(r.sdp_crc_err,0)+
+          // [NDA-KEYS-2026-11-14] flow_crc_err; equipos con firmware anterior envían la clave antigua.
+          ' · CRC ΔP: '+safeN(r.flow_crc_err!==undefined?r.flow_crc_err:r['sd'+'p_crc_err'],0)+
           ' · K: '+safeN(r.correction,0).toFixed(3)+' · peso: '+safeN(r.weight,0)+'kg');
       });
       vtUpdateFromConfig(r);
@@ -11497,16 +11509,17 @@ function processXiaoDirect(d){
   // "Temperatura 0.0 °C" y "ΔP sensor de flujo raw 0.000 Pa" de dos sensores ausentes —
   // un cero es una medición, y esto no lo era.
   const num=v=>(v==null)?NaN:Number(v);
-  const o2=num(d.o2), co2=num(d.co2), rer=num(d.rer_sbn), pres=num(d.pres), dp=num(d.dp), temp=num(d.temp);
+  _rerGasAlias(d);
+  const o2=num(d.o2), co2=num(d.co2), rer=num(d.rer_gas), pres=num(d.pres), dp=num(d.dp), temp=num(d.temp);
   const valid=n=>Number.isFinite(n);
   setDiagDeviceName(d.device_id||'XIAO-GAS');
   setConnected(true,'XIAO USB · sensor de gas + sensor de flujo · modo directo');
   setText('d-vo2','--'); setText('d-vco2','--'); setText('d-ee','--');
   setText('d-ve','--'); setText('d-rr','--'); setText('d-vevo2','--'); setText('d-vevco2','--'); setText('d-vol','--');
   // gas_ok se exige además del rango: si el firmware detuvo la medición del
-  // sensor de gas (fault de heater/comm), `rer_sbn` queda clavado en su último valor y
+  // sensor de gas (fault de heater/comm), `rer_gas` queda clavado en su último valor y
   // sin este gate el panel lo seguía pintando como "Live-RER" en vivo. Medido
-  // 2026-08-12: 50 tramas seguidas con rer_sbn 0.680 fósil sobre gas congelado.
+  // 2026-08-12: 50 tramas seguidas con rer_gas 0.680 fósil sobre gas congelado.
   const _gasLive = d.gas_ok===true;
   const rerOk = _gasLive && valid(rer) && rer>=0.5 && rer<=1.5;
   setText('d-rer-label','Live-RER sensor de gas'); setText('d-rer',rerOk?rer.toFixed(3):'--');
@@ -12176,7 +12189,7 @@ function handleBLE(event){
           +' | vo2='+safeN(_bd.vo2).toFixed(1)
           +' ve='+safeN(_bd.ve).toFixed(1)
           +' o2='+safeN(_bd.o2).toFixed(2)
-          +' rer='+safeN(_bd.rer_sbn).toFixed(3)
+          +' rer='+safeN(_bd.rer_gas).toFixed(3)
           +' dp='+safeN(_bd.dp).toFixed(3)
           +' dpc='+safeN(_bd.dp_c).toFixed(3)
           +' ema~'+Math.abs(safeN(_bd.dp_c)).toFixed(3)
@@ -22623,10 +22636,19 @@ function calCO2Execute(){
             return m;
           }
 
-          function fwuDeviceStatus(m, mac, flashMd5){
-            const regMacs=Object.values(m.registry||{}).map(fwuNormMac);
-            if(!regMacs.includes(mac)) return 'unregistered';
-            const e=(m.boards||[]).find(b=>fwuNormMac(b.mac)===mac);
+          // [FW-PUBLIC-2026-11-14] La publicación de GitHub no trae registro ni MAC en claro:
+          // cada placa va con mac_id = SHA-256(sal + MAC). La publicación local (PC) sí trae ambos.
+          const FWU_MAC_ID_SALT = 'VO2Smart-fw-mac-v1:';   // @consumidores tools/release MAC_ID_SALT
+          async function fwuMacId(mac){
+            return fwuHex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(FWU_MAC_ID_SALT+mac)));
+          }
+          async function fwuFindEntry(m, mac){
+            const id=await fwuMacId(mac);
+            return (m.boards||[]).find(b=>(b.mac&&fwuNormMac(b.mac)===mac)||b.mac_id===id)||null;
+          }
+          async function fwuDeviceStatus(m, mac, flashMd5){
+            if(m.registry && !Object.values(m.registry).map(fwuNormMac).includes(mac)) return 'unregistered';
+            const e=await fwuFindEntry(m,mac);
             if(!e) return 'no_release';
             return (flashMd5 && flashMd5.toLowerCase()===e.md5) ? 'up_to_date' : 'update';
           }
@@ -22668,11 +22690,11 @@ function calCO2Execute(){
               await fwuOpenLoader();
               _fwu.mac=fwuNormMac(await _fwu.loader.chip.readMac(_fwu.loader));
               fwuLog('MAC del equipo: '+_fwu.mac);
-              let st=fwuDeviceStatus(_fwu.manifest,_fwu.mac,null);
+              let st=await fwuDeviceStatus(_fwu.manifest,_fwu.mac,null);
               if(st==='update'){
-                _fwu.entry=_fwu.manifest.boards.find(b=>fwuNormMac(b.mac)===_fwu.mac);
+                _fwu.entry=await fwuFindEntry(_fwu.manifest,_fwu.mac);
                 const md5=await _fwu.loader.flashMd5sum(FWU_APP_OFFSET,_fwu.entry.size);
-                st=fwuDeviceStatus(_fwu.manifest,_fwu.mac,md5);
+                st=await fwuDeviceStatus(_fwu.manifest,_fwu.mac,md5);
                 fwuLog('Placa '+_fwu.entry.board_tag+' · MD5 flash '+md5.slice(0,12)+'… vs publicación '+_fwu.entry.md5.slice(0,12)+'…');
               }
               _fwu.status=st;
@@ -22699,9 +22721,9 @@ function calCO2Execute(){
             unregistered: 'Equipo NO registrado para actualizaciones: envía su MAC al laboratorio.',
             no_release:   'No hay firmware publicado para este equipo todavía.',
           };
-          function fwuBleStatus(m, mac, build){
-            if(!Object.values(m.registry||{}).map(fwuNormMac).includes(mac)) return 'unregistered';
-            const e=(m.boards||[]).find(b=>fwuNormMac(b.mac)===mac);
+          async function fwuBleStatus(m, mac, build){
+            if(m.registry && !Object.values(m.registry).map(fwuNormMac).includes(mac)) return 'unregistered';
+            const e=await fwuFindEntry(m,mac);
             if(!e) return 'no_release';
             return (build && e.build===build) ? 'up_to_date' : 'update';
           }
@@ -22716,13 +22738,17 @@ function calCO2Execute(){
             }catch(e){ console.warn('[FWU] sin respuesta del equipo:',e.message); return; }
             try{
               const latest=await (await fetch(FWU_REPO_URL+'latest.json',{cache:'no-store'})).json();
+              // [FW-PUBLIC-2026-11-14] {"commit": 0} = no hay versión nueva publicada: nada que avisar.
+              if(!latest || !latest.commit){ console.log('[FWU] sin versión nueva publicada'); return; }
               document.getElementById('fwu-url').value=FWU_REPO_URL+latest.commit+'/';
               _fwu.files={};                       // la revisión automática usa siempre el repositorio
               m=await fwuLoadManifest();
             }catch(e){ console.warn('[FWU] publicación no disponible:',e.message); return; }
-            const mac=fwuNormMac(cfg.mac), st=fwuBleStatus(m,mac,ver.build);
+            const mac=fwuNormMac(cfg.mac), st=await fwuBleStatus(m,mac,ver.build);
             fwuLog('BLE: '+(cfg.device||mac)+' · compilado '+ver.build+' · estado '+st);
-            if(st==='up_to_date') return;
+            // Sin versión para ESTE equipo en la publicación pública = nada que avisar (el
+            // registro completo vive en el PC del laboratorio, no en GitHub).
+            if(st==='up_to_date' || (st==='no_release' && !m.registry)) return;
             requestAnimationFrame(()=>fwuPromptUpdate(st, cfg.device||mac, mac));
           }
           function fwuPromptUpdate(st, device, mac){
@@ -23810,7 +23836,7 @@ function calCO2Execute(){
       ⚠️ NUNCA ejecutar con la mascarilla puesta ni con el sujeto exhalando cerca del sensor.
       La FRC fija la línea base de CO₂ al valor que el sensor esté leyendo: anclarla sobre aire
       espirado (3.5–5 %) deja el cero 100× alto y hunde VCO₂ y RER durante toda la sesión
-      (DS v0.5 §6.2). Es el mismo error que dejó rer_sbn en 0.
+      (DS v0.5 §6.2). Es el mismo error que dejó rer_gas en 0.
     </div>
     <div id="calco2-wiz-timer" style="display:none;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:6px;padding:8px 10px;text-align:center;margin-bottom:12px;">
       <div style="font-size:0.68rem;color:#b54708;margin-bottom:4px;">⏳ Ventilando el sensor a aire ambiente…</div>
