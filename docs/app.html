@@ -5233,7 +5233,8 @@ function _doStartTest(){
   G.feHold={};
   G._lastMetSig=null;G._lastVenSig=null;G._lastMetricSig=null;
   G.breathBuf=[];G._lastBxbSeq=0;G._lastBxbSeqRow=0;G._breathFallback=false;
-  G.vo2Peak=0;G.hrPeak=0;G.vePeak=0;G.rerPeak=0;G.rerAvg=0;G.rerSum=0;G.rerCount=0;G._lastRER=NaN;
+  G.vo2Peak=0;G.hrPeak=0;G.vePeak=0;G.rerPeak=0;G.rerAvg=0;G.rerSum=0;G.rerCount=0;G._lastRER=NaN;G.oues=0;   // [REP-INCR-2026-11-23] no heredar OUES de la sesión anterior
+  
   G.vo2FloorFail=0;G.vo2FloorWarn=0;G.vo2FloorHist={};G.vo2Floor=null;
   G.totalCalories=0;
   G._calLastTs=0;   // [CAL-DT-2026-09-15] la primera trama de la sesión integra 1 s
@@ -9509,9 +9510,11 @@ function processData(d){
     }
   }
   // OUES estimation — SSOT: G.oues es la fuente única de verdad
-  if(ve_c>0&&vo2>0){
-    const oues=vo2ml/(Math.log10(ve_c));
-    G.oues=oues>0?oues:0;
+  // [REP-INCR-2026-11-23] OUES = pendiente de la regresión VO₂(mL/min)~log10(VE) (Baba 1996)
+  // sobre las filas de carga de la sesión. Antes: cociente de UN frame (vo2ml/log10 VE),
+  // que fuerza intercepto 0 y no es OUES. Se recalcula cada 10 filas (O(n)).
+  if(ve_c>0&&vo2>0&&(G.session.length%10===0||!(G.oues>0))){
+    G.oues=computeOuesRegression(G.session,getPatient().weight);
     setText('oues-val',G.oues>0?G.oues.toFixed(0):'--');
   }
 
@@ -14486,6 +14489,50 @@ function renderRadar(labels, data, pointColors){
   });
 }
 
+// [REP-INCR-2026-11-23] Métricas de prueba incremental calculadas al cerrar el informe.
+// Las detecciones live (G.fatmaxDetected/G.crossoverDetected) expresan el %VO₂ contra el
+// pico EN CURSO, que en una rampa es siempre ≈100 %, y el crossover usaba un frame suelto.
+// Aquí: bins de 30 s sobre filas de carga válidas, % contra el pico final, grasa por
+// Frayn (1983) con VO₂/VCO₂ en L/min. OUES = pendiente VO₂(mL/min) vs log10(VE) (Baba 1996).
+function _repLoadRows(session){
+  return (session||[]).filter(e=>e&&e.metNew!==false&&e.gasValid!==false&&!safeN(e.artFlag,0)&&
+    e.vo2_floor!=='IMPOSIBLE'&&_PH_LOAD.has(e.phase)&&safeN(e.vo2,0)>0.5&&safeN(e.vco2,0)>0.1);
+}
+function computeOuesRegression(session,weightKg){
+  const w=safeN(weightKg,0); if(w<=0)return 0;
+  const pts=_repLoadRows(session).filter(e=>safeN(e.ve,0)>1);
+  if(pts.length<20)return 0;
+  const reg=_linReg(pts.map(e=>Math.log10(safeN(e.ve))),pts.map(e=>safeN(e.vo2)*w));
+  return reg&&reg.b>0?reg.b:0;
+}
+function computeIncrementalSubstrate(session,vo2PeakKg,weightKg){
+  const w=safeN(weightKg,0),pk=safeN(vo2PeakKg,0);
+  const out={fatmax:null,crossover:null,reason:''};
+  if(w<=0||pk<=0){out.reason='sin peso o sin VO₂ pico';return out;}
+  const bins=new Map();
+  for(const e of _repLoadRows(session)){
+    const k=Math.floor(safeN(e._activeMs??e._tms,0)/30000);
+    const b=bins.get(k)||{n:0,vo2:0,vco2:0,fat:0,cho:0};
+    b.n++;b.vo2+=safeN(e.vo2);b.vco2+=safeN(e.vco2);b.fat+=safeN(e.fat_pct,0);b.cho+=safeN(e.cho_pct,0);
+    bins.set(k,b);
+  }
+  const seq=[...bins.entries()].sort((a,b)=>a[0]-b[0]).map(([k,b])=>b).filter(b=>b.n>=10).map(b=>{
+    const vo2=b.vo2/b.n,vco2=b.vco2/b.n,vo2L=vo2*w/1000,vco2L=vco2*w/1000;
+    return {vo2,pct:vo2/pk*100,fat_g:Math.max(0,1.67*vo2L-1.67*vco2L),fatPct:b.fat/b.n,choPct:b.cho/b.n};
+  });
+  if(seq.length<3){out.reason='menos de 3 ventanas de 30 s con carga';return out;}
+  const fm=seq.reduce((m,b)=>b.fat_g>m.fat_g?b:m,seq[0]);
+  if(fm.fat_g>0.01)out.fatmax={fat_g:fm.fat_g,vo2pct:fm.pct};
+  // Crossover: primera ventana con CHO ≥ grasa sostenida en la siguiente, tras una con grasa > CHO.
+  for(let i=1;i<seq.length-1;i++){
+    if(seq[i-1].fatPct>seq[i-1].choPct&&seq[i].choPct>=seq[i].fatPct&&seq[i+1].choPct>=seq[i+1].fatPct){
+      out.crossover={vo2pct:seq[i].pct};break;
+    }
+  }
+  if(!out.crossover)out.reason=seq[0].choPct>=seq[0].fatPct?'CHO predominante desde el inicio de la carga':'sin cruce sostenido';
+  return out;
+}
+
 async function updateReport(){
   try{
   const now=new Date();
@@ -14521,7 +14568,9 @@ async function updateReport(){
   const _isTechTest=(_repProtoId==='test');
   const _isNonMaxProtocol=!isVo2maxProtocol(_repProtoId);
   // Protocolo incremental: rampa → OUES, FatMax y Crossover son aplicables
-  const _isIncrementalProto=(()=>{try{return PROTOCOLS[_repProtoId]?.type==='rampa';}catch(e){return false;}})();
+  // [REP-INCR-2026-11-23] `PROTOCOLS` no existe (es PROTOCOL_META): el ReferenceError lo tragaba
+  // el catch y FatMax/Crossover/OUES salían «N/A» en TODA prueba incremental.
+  const _isIncrementalProto=PROTOCOL_META[_repProtoId]?.type==='rampa';
   // Ocultar secciones no aplicables a prueba en reposo
   // El radar es una visualización descriptiva y se conserva también en RMR;
   // la clasificación VO₂máx ya queda bloqueada por _isNonMaxProtocol.
@@ -14852,8 +14901,10 @@ async function updateReport(){
     setText('rep-tee-total',caloCtx.rmrValid?tee.toFixed(0)+' kcal/día':'--');
     // AP-RPT-03: Crossover/FatMax solo válidos en protocolos incrementales
     if(_isIncrementalProto){
-      if(G.crossoverDetected)setText('rep-crossover',G.crossoverDetected.vo2pct.toFixed(0)+'% VO₂max');
-      if(G.fatmaxDetected)setText('rep-fatmax',G.fatmaxDetected.fat_g.toFixed(2)+' g/min @ '+G.fatmaxDetected.vo2pct.toFixed(0)+'% VO₂max');
+      // [REP-INCR-2026-11-23] Recalculado sobre la sesión cerrada (ver computeIncrementalSubstrate).
+      const _sub=computeIncrementalSubstrate(G.session,G.vo2Peak,_rpp.weight);
+      setText('rep-crossover',_sub.crossover?_sub.crossover.vo2pct.toFixed(0)+'% VO₂pico':'No detectado — '+_sub.reason);
+      setText('rep-fatmax',_sub.fatmax?_sub.fatmax.fat_g.toFixed(2)+' g/min @ '+_sub.fatmax.vo2pct.toFixed(0)+'% VO₂pico':'No detectado — '+(_sub.reason||'sin oxidación de grasa medible'));
     }else{
       setText('rep-crossover','N/A — requiere protocolo incremental');
       setText('rep-fatmax','N/A — requiere protocolo incremental');
@@ -14939,6 +14990,7 @@ async function updateReport(){
     if(interpEl)interpEl.textContent='Interpretación: τ de '+t.toFixed(1)+'s indica eficiencia mitocondrial '+(t<30?'dentro del rango normal':'por debajo del óptimo')+'. Compatible con nivel '+(t<20?'élite':t<30?'entrenado':t<45?'recreativo':'sedentario')+' (Grassi et al., 2011).';
   }
   // AP-RPT-03: OUES requiere regresión VO₂ vs log(VE) durante ejercicio progresivo — no válido en reposo
+  if(_isIncrementalProto)G.oues=computeOuesRegression(G.session,_rpp.weight);   // [REP-INCR-2026-11-23] cierre: todas las filas
   setText('rep-oues', (_isIncrementalProto&&G.oues>0) ? G.oues.toFixed(0) : (_isRestProtocol?'N/A — reposo':'--')); // SSOT: G.oues
   // Mejora F: Umbrales ventilatorios en informe
   // SSOT: G.vt1Rep/G.vt2Rep/G.rcpRep son la fuente única — no leer del DOM
