@@ -9453,20 +9453,23 @@ function processData(d){
   const ampStr  = K.amplitude != null && K.valid ? K.amplitude.toFixed(1)   : '--';
   setText('tau-val',  tauStr);
   setText('mrt-val',  mrtStr);
-  // Umbrales: V-slope VT1 (Beaver 1986) + Nadir VE/VCO₂ VT2 (Wasserman 2012)
-  const _vt1Real = computeVSlopeVT1();
-  const _vt2Real = computeNadirVT2();
-  const vt1 = _vt1Real != null ? _vt1Real.toFixed(1)
-            : (K.valid && K.baseline > 0 ? K.baseline.toFixed(1)
-            : (vo2 > 5 ? 'Detectando…' : '--'));
-  const vt2 = _vt2Real != null ? _vt2Real.toFixed(1)
-            : (vo2 > 5 ? 'Detectando…' : '--');
-  const rcp = _vt2Real != null ? (_vt2Real * 1.05).toFixed(1)
-            : (vo2 > 5 ? 'Detectando…' : '--');
-  setText('vt1-val', vt1);
-  setText('vt2-val', vt2);
-  setText('rcp-val', rcp);
-  G.vt1Rep=vt1; G.vt2Rep=vt2; G.rcpRep=rcp;
+  // Umbrales — [VO2SP-UMBRALES-2026-11-24] consenso de métodos publicados (umbrales_vt.js):
+  // VT1 V-slope/ExCO₂/VE-VO₂/FeO₂ · VT2 VE-VCO₂/FeCO₂ · RCP VE vs VCO₂. Sin quiebre detectable
+  // (reposo, test técnico, esfuerzo insuficiente) → estimación VO₂máx(IA) × ratio OMNIA, rotulada.
+  // G.vt1Rep/vt2Rep/rcpRep guardan SOLO lo MEDIDO (los consumen la tabla lab y companion);
+  // G.vtRes lleva medido|estimado con su origen para tarjetas e informe.
+  // Antes: RCP = VT2 × 1.05 y VT1 = baseline cinético cuando no había quiebre — valores
+  // inventados que el informe presentaba como umbrales. Eliminados.
+  // REVERTIR: restaurar computeVSlopeVT1()/computeNadirVT2() aquí (siguen definidas).
+  {
+    const _U = (typeof window.VO2SP_umbralesSesion === 'function') ? window.VO2SP_umbralesSesion() : null;
+    const _wait = vo2 > 5 ? 'Detectando…' : '--';
+    const _med = k => (_U && _U[k] && _U[k].origen === 'medido') ? _U[k].valor.toFixed(1) : _wait;
+    G.vt1Rep=_med('vt1'); G.vt2Rep=_med('vt2'); G.rcpRep=_med('rcp');
+    G.vtRes=_U;
+    if (_U && typeof window.VO2SP_pintarUmbrales === 'function') window.VO2SP_pintarUmbrales(_U);
+    else { setText('vt1-val', G.vt1Rep); setText('vt2-val', G.vt2Rep); setText('rcp-val', G.rcpRep); }
+  }
   // Mejora D: Feedback dinámico de estado cinético (Grassi 2011, Jones & Poole 2005)
   {
     const fitnessEl = document.getElementById('fitness-val');
@@ -12842,6 +12845,17 @@ function updateReportLab(){
     }
     setText('lab-vt1',isFinite(vt1)&&vt1>0?vt1.toFixed(1):'--');
     setText('lab-vt2',isFinite(vt2)&&vt2>0?vt2.toFixed(1):'--');
+    // [VO2SP-UMBRALES-2026-11-24] Sin quiebre medido: mostrar la estimación IA rotulada (≈ y nota).
+    {
+      let _U=null; try{ _U=typeof window.VO2SP_umbralesSesion==='function'?window.VO2SP_umbralesSesion(true):null; }catch(_e){}
+      for(const k of ['vt1','vt2']){
+        const x=_U&&_U[k], u=document.querySelector('#lab-'+k+' + .lab-u');
+        if(x&&x.origen==='estimado'&&isFinite(x.valor)){
+          setText('lab-'+k,'≈ '+x.valor.toFixed(1));
+          if(u)u.textContent='ml·kg⁻¹·min⁻¹ · IA (estimación) ± '+x.banda.toFixed(1);
+        }else if(u)u.textContent=x&&x.origen==='medido'?'ml·kg⁻¹·min⁻¹ · medido':'ml·kg⁻¹·min⁻¹';
+      }
+    }
     setText('lab-dur',dur>0?_labMMSS(dur):'--');
     const ac=aerobicClass(vo2,age,sex);
     const badge=document.getElementById('lab-class');
@@ -14574,7 +14588,9 @@ async function updateReport(){
   // Ocultar secciones no aplicables a prueba en reposo
   // El radar es una visualización descriptiva y se conserva también en RMR;
   // la clasificación VO₂máx ya queda bloqueada por _isNonMaxProtocol.
-  const _exerciseSections=['rep-specialties-section','rep-kinetics-section','rep-thresholds-section','rep-zones-section'];
+  // [VO2SP-UMBRALES-2026-11-24] rep-thresholds-section sale de esta lista: se informa SIEMPRE
+  // (medido si hubo quiebre; si no, IA (estimación) rotulada). rep-ia-section tampoco se oculta.
+  const _exerciseSections=['rep-specialties-section','rep-kinetics-section','rep-zones-section'];
   _exerciseSections.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=(_isRestProtocol||_isTechTest)?'none':'';});
   // Cambiar título de resultados para reposo
   const _cardioTitle=document.querySelector('#rep-cardio-section .report-section-title');
@@ -14993,16 +15009,15 @@ async function updateReport(){
   if(_isIncrementalProto)G.oues=computeOuesRegression(G.session,_rpp.weight);   // [REP-INCR-2026-11-23] cierre: todas las filas
   setText('rep-oues', (_isIncrementalProto&&G.oues>0) ? G.oues.toFixed(0) : (_isRestProtocol?'N/A — reposo':'--')); // SSOT: G.oues
   // Mejora F: Umbrales ventilatorios en informe
-  // SSOT: G.vt1Rep/G.vt2Rep/G.rcpRep son la fuente única — no leer del DOM
-  const vt1Rep=G.vt1Rep||'--';
-  const vt2Rep=G.vt2Rep||'--';
-  const rcpRep=G.rcpRep||'--';
-  setText('rep-vt1',vt1Rep!=='Detectando…'?vt1Rep+' ml/kg/min':'--');
-  setText('rep-vt2',vt2Rep!=='Detectando…'?vt2Rep+' ml/kg/min':'--');
-  setText('rep-rcp',rcpRep!=='Detectando…'?rcpRep+' ml/kg/min':'--');
-  if(vo2>0&&vt1Rep!=='Detectando…'){
-    const vt1N=parseFloat(vt1Rep);
-    if(vt1N>0)setText('rep-vt1-pct',(vt1N/vo2*100).toFixed(0)+'%');
+  // [VO2SP-UMBRALES-2026-11-24] Fuente: VO2SP_umbralesSesion() (medido | IA estimación) y
+  // VO2SmartPredict (A/B/C/D/integral). Se recalcula aquí sobre la sesión cerrada.
+  if(typeof window.VO2SP_rellenarInforme==='function'){
+    try{ window.VO2SP_rellenarInforme({vo2Peak:vo2}); }catch(_e){ console.error('[VO2SP-UMBRALES] informe',_e); }
+  }else{
+    const vt1Rep=G.vt1Rep||'--', vt2Rep=G.vt2Rep||'--', rcpRep=G.rcpRep||'--';
+    setText('rep-vt1',vt1Rep!=='Detectando…'?vt1Rep+' ml/kg/min':'--');
+    setText('rep-vt2',vt2Rep!=='Detectando…'?vt2Rep+' ml/kg/min':'--');
+    setText('rep-rcp',rcpRep!=='Detectando…'?rcpRep+' ml/kg/min':'--');
   }
   // Mejora H: Zonas de entrenamiento
   if(vo2>0&&G.zoneTimers){
@@ -15174,6 +15189,26 @@ async function captureChartsForReport(){
 
   console.log('📷 captureChartsForReport — fullHist pts:',G.fullHist.labels.length,'chartView:',prevView);
 
+  // [VO2SP-UMBRALES-2026-11-24] VT1/VT2/RCP como líneas horizontales en «Cinética VO₂ & Umbrales»
+  // SOLO durante la captura (se retiran después). Medido = continua; IA (estimación) = punteada.
+  const _thrDs=[];
+  try{
+    const _U=G.vtRes||(typeof window.VO2SP_umbralesSesion==='function'?window.VO2SP_umbralesSesion(true):null);
+    const kc=G.charts.kinetics;
+    if(_U&&kc){
+      const n=kc.data.labels.length, col={vt1:'#1d4ed8',vt2:'#c62828',rcp:'#6d28d9'};
+      for(const k of ['vt1','vt2','rcp']){
+        const x=_U[k]; if(!x||!isFinite(x.valor)||n<2)continue;
+        if(k==='rcp'&&x.origen==='estimado'&&_U.vt2?.origen==='estimado')continue;   // mismo valor que VT2
+        const ds={label:`${k.toUpperCase()}${x.origen==='estimado'?' ≈ IA':''} ${x.valor.toFixed(1)}`,data:Array(n).fill(x.valor),
+          borderColor:col[k],backgroundColor:'transparent',borderWidth:1.5,borderDash:x.origen==='estimado'?[6,4]:[],pointRadius:0,tension:0,_vo2spThr:true};
+        kc.data.datasets.push(ds); _thrDs.push(ds);
+      }
+    }
+  }catch(e){console.warn('[VO2SP-UMBRALES] líneas cinética',e);}
+  // Gráficos de umbrales (V-slope, equivalentes, VE–VCO₂) en SVG, independientes de Chart.js.
+  try{ if(typeof window.VO2SP_graficosUmbrales==='function')window.VO2SP_graficosUmbrales(); }catch(e){console.warn('[VO2SP-UMBRALES] gráficos',e);}
+
   let capturedCount=0;
   for(const[key,imgId]of Object.entries(chartMap)){
     const chart=G.charts[key];
@@ -15204,6 +15239,10 @@ async function captureChartsForReport(){
     }
   }
   console.log('📷 captureChartsForReport done —',capturedCount,'of',Object.keys(chartMap).length,'captured');
+  if(_thrDs.length&&G.charts.kinetics){
+    G.charts.kinetics.data.datasets=G.charts.kinetics.data.datasets.filter(d=>!d._vo2spThr);
+    G.charts.kinetics.update('none');
+  }
 
   // Restore previous view
   if(prevView==='live')trimChartsToLive();
@@ -23423,17 +23462,49 @@ function calCO2Execute(){
           </div>
 
           <!-- Mejora F: Umbrales Ventilatorios en Informe -->
+          <!-- [VO2SP-UMBRALES-2026-11-24] Siempre visible: medido (consenso de métodos) o IA (estimación). -->
           <div class="report-section" id="rep-thresholds-section">
-            <div class="report-section-title">🎯 Umbrales Ventilatorios</div>
+            <div class="report-section-title">🎯 Umbrales Ventilatorios & Cinética VO₂</div>
             <div class="report-grid">
               <div>
                 <div class="report-field"><label>VT1 — Umbral Aeróbico</label><span id="rep-vt1">-- ml/kg/min</span></div>
                 <div class="report-field"><label>VT2 — Umbral Anaeróbico</label><span id="rep-vt2">-- ml/kg/min</span></div>
+                <div class="report-field"><label>RCP — Punto Compensación</label><span id="rep-rcp">-- ml/kg/min</span></div>
               </div>
               <div>
-                <div class="report-field"><label>RCP — Compensación Respirat.</label><span id="rep-rcp">-- ml/kg/min</span></div>
-                <div class="report-field"><label>VT1 como % VO₂max</label><span id="rep-vt1-pct">--%</span></div>
+                <div class="report-field"><label>VT1 como % VO₂máx</label><span id="rep-vt1-pct">--%</span></div>
+                <div class="report-field"><label>VT2 como % VO₂máx</label><span id="rep-vt2-pct">--%</span></div>
+                <div class="report-field"><label>Origen</label><span id="rep-thr-origin">--</span></div>
               </div>
+            </div>
+            <div id="rep-thr-methods" style="font-size:0.75rem;color:var(--muted2);margin-top:6px;line-height:1.5;"></div>
+            <div id="rep-thr-note" style="font-size:0.72rem;color:var(--muted2);margin-top:4px;line-height:1.5;">
+              Medido: consenso (mediana) de V-slope (Beaver 1986), exceso de CO₂ (Gaskill 2001), VE/VO₂ con VE/VCO₂ estable y FeO₂ para VT1;
+              VE/VCO₂ y FeCO₂ para VT2; VE vs VCO₂ para RCP (Wasserman 2012). VT2 y RCP son el mismo evento visto con criterios distintos (Binder 2008).
+              Estimado: VO₂máx de VO2Smart Predict × fracción mediana del evaluador en 35 CPET de deportistas (VT1 0,705 · VT2 0,923).
+              Validación vs evaluador (OMNIA, n=35): VT1 MAE ≈ 300 mL/min · VT2/RCP ≈ 240 mL/min.
+            </div>
+          </div>
+
+          <!-- [VO2SP-UMBRALES-2026-11-24] IA predictiva en el informe (VO2Smart Predict A/B/C/D + integral). -->
+          <div class="report-section" id="rep-ia-section">
+            <div class="report-section-title">🧬 VO2Smart Predict — IA (estimación)</div>
+            <div class="report-grid">
+              <div>
+                <div class="report-field"><label>VO₂máx integral (perfil + gases)</label><span id="rep-ia-int">--</span></div>
+                <div class="report-field"><label>A · esperado por perfil</label><span id="rep-ia-a">--</span></div>
+                <div class="report-field"><label>B · estimado por la prueba</label><span id="rep-ia-b">--</span></div>
+              </div>
+              <div>
+                <div class="report-field"><label>D · proyectado con gases</label><span id="rep-ia-d">--</span></div>
+                <div class="report-field"><label>C · última ventana 15 s</label><span id="rep-ia-c">--</span></div>
+                <div class="report-field"><label>VO₂ pico medido (30 s) · control</label><span id="rep-ia-ctl">--</span></div>
+              </div>
+            </div>
+            <div id="rep-ia-state" style="font-size:0.75rem;color:var(--muted2);margin-top:6px;line-height:1.5;"></div>
+            <div style="font-size:0.72rem;color:var(--muted2);margin-top:4px;line-height:1.5;">
+              Modelos entrenados con 669 CPET de deportistas (COSMED OMNIA), validados en sujetos no vistos: A MAE 6,9 · B 5,8 · C 5,7 · D 4,4–4,5 ml/kg/min
+              (2,8–2,9 al alcanzar RER 1,05). Estimaciones: nunca reemplazan ni corrigen un valor medido. Fuera de 13,9–40,8 años o sin ejercicio incremental son exploratorias.
             </div>
           </div>
 
@@ -23539,6 +23610,16 @@ function calCO2Execute(){
                 <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:4px;">Cinética VO₂ & Umbrales</div>
                 <img id="rep-img-kinetics" class="report-chart-img" alt="Cinética">
               </div>
+            </div>
+            <!-- [VO2SP-UMBRALES-2026-11-24] Gráficos de umbrales: ventanas de 15 s del motor de detección. -->
+            <div class="report-chart-section" id="rep-thr-charts">
+              <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:4px;">Umbrales ventilatorios — V-slope · Equivalentes · VE vs VCO₂</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                <svg id="rep-svg-vslope" viewBox="0 0 300 220" style="width:100%;background:#faf6ec;border-radius:6px;" role="img" aria-label="V-slope"></svg>
+                <svg id="rep-svg-eq" viewBox="0 0 300 220" style="width:100%;background:#faf6ec;border-radius:6px;" role="img" aria-label="Equivalentes ventilatorios"></svg>
+                <svg id="rep-svg-vevco2" viewBox="0 0 300 220" style="width:100%;background:#faf6ec;border-radius:6px;" role="img" aria-label="VE vs VCO2"></svg>
+              </div>
+              <div id="rep-thr-charts-note" style="font-size:0.7rem;color:var(--muted2);margin-top:4px;"></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="report-chart-section">
@@ -24953,6 +25034,414 @@ function calCO2Execute(){
   }
   return { estado, A_LOA, RER_MAX_OK };
 });
+
+</script>
+<script id="vo2sp-umbrales">
+/* umbrales_vt.js — VT1 / VT2 / RCP para VO2Smart (fuente; se inserta en vo2lab.html).
+ * [VO2SP-UMBRALES-2026-11-24]
+ *
+ * DETECCIÓN (prueba con carga incremental): consenso de métodos publicados, todos
+ * abiertos y reproducibles. Cada método es una regresión segmentada continua (bisagra)
+ *   y = a + b·x + c·max(0, x − k)
+ * con k elegido por mínimo RSS y aceptado solo si el cambio de pendiente tiene el signo
+ * fisiológico y F(1, n−3) ≥ F_MIN frente a la recta única.
+ *   VT1  · V-slope (VCO₂ vs VO₂)                    Beaver, Wasserman & Whipp 1986
+ *        · Exceso de CO₂ (VCO₂²/VO₂ − VCO₂)        Gaskill et al. 2001
+ *        · VE/VO₂ sube sin subir VE/VCO₂           Wasserman et al. 2012 (equivalentes)
+ *        · FeO₂ espirada: nadir → ascenso          (análogo de PetO₂; Whipp 1989)
+ *   VT2  · VE/VCO₂ sube (equivalente de CO₂)       Wasserman et al. 2012
+ *        · FeCO₂ espirada: pico → descenso         (análogo de PetCO₂)
+ *   RCP  · VE vs VCO₂ (segunda pendiente)          Beaver 1986; Whipp 1989
+ *   VT2 y RCP son el MISMO evento fisiológico (Binder 2008) visto con criterios
+ *   distintos: se informan por separado para mostrar su concordancia, no se inventa uno
+ *   a partir del otro.
+ *
+ * ESTIMACIÓN (sin prueba incremental, o sin quiebre detectable): VT = VO₂máx × r, con
+ * VO₂máx de VO2Smart Predict (integral: medido > D con gases > A por perfil) y r = mediana
+ * de los umbrales del evaluador en OMNIA (ver RATIOS). Siempre se rotula «IA (estimación)».
+ *
+ * Unidades: vo2 y vco2 en la MISMA unidad (mL/min o mL/kg/min); ve en L/min; feo2 en vol%;
+ * feco2 en vol%. Los equivalentes solo se usan por su forma (el quiebre es invariante a escala).
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.VO2SPUmbrales = api;
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  const fin = v => typeof v === 'number' && isFinite(v);
+  const BIN_S = 15;           // misma ventana que C/D y que OMNIA
+  const F_MIN = 4.0;          // ~p < 0.05 para 1 gl adicional
+  const MIN_BINS = 12;        // 3 min con carga
+  const LOAD = new Set(['warmup', 'exercise', 'steady', 'WARMUP', 'EXERCISE']);
+
+  // Mediana de VO2_AT/VO2_Max y VO2_RC/VO2_Max del evaluador en OMNIA (umbrales_evaluador.csv,
+  // 35 pruebas coherentes de 38; excluidas T0014, T0023, T0127). Salida de test_umbrales.cjs
+  // 2026-11-24. Población: deportistas → en sedentarios VT1 suele caer a 50–60 % (Binder 2008):
+  // la banda (1,96·sd) lo cubre solo en parte; por eso todo valor estimado va rotulado.
+  const RATIOS = { vt1: { r: 0.705, sd: 0.089, n: 35 }, vt2: { r: 0.923, sd: 0.070, n: 35 } };
+
+  const nmean = a => { let s = 0, c = 0; for (const v of a) if (fin(v)) { s += v; c++; } return c ? s / c : NaN; };
+  const median = a => { const b = a.filter(fin).sort((p, q) => p - q); const n = b.length; return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : NaN; };
+
+  /** Agrupa filas en ventanas de 15 s, solo fases con carga, y corta en el pico de VO₂. */
+  function preparar(rows) {
+    const g = new Map();
+    for (const r of rows || []) {
+      if (!r || !fin(r.t_s) || !fin(r.vo2) || !fin(r.vco2) || !fin(r.ve)) continue;
+      if (r.vo2 <= 0 || r.vco2 <= 0 || r.ve <= 0) continue;
+      if (r.phase != null && !LOAD.has(r.phase)) continue;
+      if (r.ok === false) continue;
+      const k = Math.floor(r.t_s / BIN_S);
+      if (!g.has(k)) g.set(k, { t: [], vo2: [], vco2: [], ve: [], feo2: [], feco2: [] });
+      const b = g.get(k);
+      b.t.push(r.t_s); b.vo2.push(r.vo2); b.vco2.push(r.vco2); b.ve.push(r.ve);
+      b.feo2.push(fin(r.feo2) && r.feo2 > 10 && r.feo2 < 21 ? r.feo2 : NaN);
+      b.feco2.push(fin(r.feco2) && r.feco2 > 0.3 && r.feco2 < 9 ? r.feco2 : NaN);
+    }
+    const keys = [...g.keys()].sort((a, b) => a - b);
+    let B = keys.map(k => { const b = g.get(k); return { t: nmean(b.t), vo2: nmean(b.vo2), vco2: nmean(b.vco2), ve: nmean(b.ve), feo2: nmean(b.feo2), feco2: nmean(b.feco2) }; });
+    // Ventanas imposibles: RER o equivalentes fuera de rango fisiológico, o VO₂ que se aparta
+    // >40 % de la mediana local (filas de marcador/artefacto; OMNIA trae VO₂ = 4 mL/min).
+    B = B.filter(b => { const rer = b.vco2 / b.vo2; return rer > 0.6 && rer < 1.7; });
+    B = B.filter((b, i, A) => { const m = median(A.slice(Math.max(0, i - 2), i + 3).filter((_, j) => j !== Math.min(2, i)).map(x => x.vo2)); return !fin(m) || (b.vo2 > 0.6 * m && b.vo2 < 1.6 * m); });
+    // Beaver 1986: el transitorio inicial (VCO₂ retrasado respecto de VO₂ tras el escalón de
+    // carga) curva la relación VCO₂–VO₂ sin ser umbral. Se descartan los primeros 2 min.
+    if (B.length) { const t0 = B[0].t; const C = B.filter(b => b.t >= t0 + 120); if (C.length >= MIN_BINS) B = C; }
+    if (B.length < 3) return B;
+    // Pico = mayor media de 2 ventanas (30 s); lo posterior (meseta/caída) no informa umbrales.
+    let ip = 0, best = -Infinity;
+    for (let i = 1; i < B.length; i++) { const m = (B[i].vo2 + B[i - 1].vo2) / 2; if (m > best) { best = m; ip = i; } }
+    return B.slice(0, ip + 1);
+  }
+
+  const smooth3 = a => a.map((v, i) => nmean([a[i - 1], v, a[i + 1]]));
+
+  function resolver3(A, y) {
+    const M = A.map((r, i) => [...r, y[i]]);
+    for (let c = 0; c < 3; c++) {
+      let p = c; for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-12) return null;
+      [M[c], M[p]] = [M[p], M[c]];
+      for (let r = 0; r < 3; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k]; }
+    }
+    return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]];
+  }
+
+  /** Bisagra continua. pts = [{x, y, i}]. Devuelve el mejor quiebre (i = índice de ventana) o null. */
+  function bisagra(pts, opt) {
+    const P = pts.filter(p => fin(p.x) && fin(p.y)).sort((a, b) => a.x - b.x);
+    const n = P.length, minSide = opt.minSide || 4;
+    if (n < 2 * minSide + 1) return null;
+    // Escala x para condicionar la matriz normal (mL/min ~ 10³).
+    const x0 = P[0].x, xs = (P[n - 1].x - x0) || 1, X = p => (p.x - x0) / xs;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (const p of P) { const x = X(p); sx += x; sy += p.y; sxx += x * x; sxy += x * p.y; }
+    const d = n * sxx - sx * sx; if (Math.abs(d) < 1e-12) return null;
+    const b0 = (n * sxy - sx * sy) / d, a0 = (sy - b0 * sx) / n;
+    let rss0 = 0; for (const p of P) rss0 += (p.y - a0 - b0 * X(p)) ** 2;
+    let best = null;
+    for (let j = minSide; j <= n - minSide - 1; j++) {
+      if (fin(opt.lo) && P[j].x < opt.lo) continue;
+      if (fin(opt.hi) && P[j].x > opt.hi) continue;
+      const k = X(P[j]);
+      const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], T = [0, 0, 0];
+      for (const p of P) { const x = X(p), v = [1, x, Math.max(0, x - k)]; for (let r = 0; r < 3; r++) { T[r] += v[r] * p.y; for (let c = 0; c < 3; c++) S[r][c] += v[r] * v[c]; } }
+      const sol = resolver3(S, T); if (!sol) continue;
+      const [a, b, c] = sol;
+      let rss = 0; for (const p of P) { const x = X(p); rss += (p.y - a - b * x - c * Math.max(0, x - k)) ** 2; }
+      if (!best || rss < best.rss) best = { i: P[j].i, x: P[j].x, rss, b, c };
+    }
+    if (!best) return null;
+    if (Math.sign(best.c) !== opt.signo) return null;
+    if (opt.despues === '+' && !(best.b + best.c > 0)) return null;
+    if (opt.despues === '-' && !(best.b + best.c < 0)) return null;
+    const F = best.rss > 0 ? (rss0 - best.rss) / (best.rss / (n - 3)) : Infinity;
+    if (!(F >= F_MIN)) return null;
+    return Object.assign(best, { F, n });
+  }
+
+  /** Consenso: mediana; con ≥3 métodos se descartan los que se alejan >15 % de la mediana. */
+  function consenso(est) {
+    const v = est.filter(e => fin(e.vo2));
+    if (!v.length) return null;
+    let m = median(v.map(e => e.vo2)), usados = v;
+    if (v.length >= 3) { const u = v.filter(e => Math.abs(e.vo2 - m) <= 0.15 * m); if (u.length) { usados = u; m = median(u.map(e => e.vo2)); } }
+    const disp = usados.length > 1 ? Math.max(...usados.map(e => e.vo2)) - Math.min(...usados.map(e => e.vo2)) : NaN;
+    return { vo2: m, metodos: usados.map(e => e.metodo), n: usados.length, n_total: v.length, dispersion: disp };
+  }
+
+  /** Detección por métodos publicados. Devuelve {vt1, vt2, rcp, motivo, bins, metodos{}}. */
+  function detectar(rows) {
+    const B = preparar(rows);
+    const out = { vt1: null, vt2: null, rcp: null, bins: B.length, metodos: {}, motivo: '' };
+    if (B.length < MIN_BINS) { out.motivo = `requiere ≥ ${MIN_BINS * BIN_S / 60} min con carga hasta el pico (hay ${(B.length * BIN_S / 60).toFixed(1)})`; return out; }
+    const vo2s = B.map(b => b.vo2), vco2s = B.map(b => b.vco2);
+    const lo = Math.min(...vo2s), hi = Math.max(...vo2s), rango = hi - lo;
+    if (!(rango > 0.35 * hi)) { out.motivo = 'sin carga incremental: el VO₂ varía < 35 % del pico'; return out; }
+    const eqo2 = smooth3(B.map(b => b.ve / b.vo2)), eqco2 = smooth3(B.map(b => b.ve / b.vco2));
+    const feo2 = smooth3(B.map(b => b.feo2)), feco2 = smooth3(B.map(b => b.feco2));
+    const tieneFe = a => a.filter(fin).length >= 0.7 * B.length;
+    const pts = (xs, ys, idx) => (idx || B.map((_, i) => i)).map(i => ({ x: xs[i], y: ys[i], i }));
+    const M = out.metodos;
+    const reg = (clave, r) => { M[clave] = r ? { vo2: B[r.i].vo2, F: +r.F.toFixed(1) } : null; return r ? { metodo: clave, vo2: B[r.i].vo2 } : null; };
+
+    // ── Techo de VT1 (Beaver 1986: V-slope solo bajo RCP) ──
+    // RCP preliminar con bisagra amplia sobre el tramo ≥ 40 % del rango: tiende a caer
+    // temprano (nadir de la U), lo que lo hace un techo CONSERVADOR para buscar VT1.
+    const c0 = Math.min(...vco2s), c1 = Math.max(...vco2s);
+    const pre = [bisagra(pts(vo2s, eqco2), { signo: +1, despues: '+', lo: lo + 0.40 * rango, minSide: 3 }),
+                 bisagra(pts(vco2s, B.map(b => b.ve)), { signo: +1, lo: c0 + 0.40 * (c1 - c0), minSide: 3 })]
+      .filter(Boolean).map(r => B[r.i].vo2);
+    const techo = Math.min(...pre, 0.90 * hi);
+
+    // ── VT1: tramo bajo, por debajo del techo ──
+    const sub = B.map((_, i) => i).filter(i => B[i].vo2 <= techo);
+    let eqo2Res = bisagra(pts(vo2s, eqo2, sub), { signo: +1, despues: '+', minSide: 4 });
+    // Wasserman: VE/VO₂ sube MIENTRAS VE/VCO₂ no sube (si sube también, es compensación).
+    if (eqo2Res) {
+      const ven = sub.filter(i => Math.abs(i - eqo2Res.i) <= 3);
+      const pend = ys => { const p = ven.map(i => [B[i].vo2, ys[i]]).filter(q => fin(q[1])); if (p.length < 3) return NaN;
+        const mx = nmean(p.map(q => q[0])), my = nmean(p.map(q => q[1])); let nu = 0, de = 0;
+        for (const [a, b] of p) { nu += (a - mx) * (b - my); de += (a - mx) ** 2; } return de > 0 ? nu / de / my : NaN; };
+      const so2 = pend(eqo2), sco2 = pend(eqco2);
+      if (fin(so2) && fin(sco2) && sco2 > 0.5 * so2) eqo2Res = null;
+    }
+    const vt1Est = [
+      reg('vslope', bisagra(pts(vo2s, vco2s, sub), { signo: +1, minSide: 4 })),
+      reg('exco2', bisagra(pts(vo2s, B.map(b => b.vco2 * b.vco2 / b.vo2 - b.vco2), sub), { signo: +1, despues: '+', minSide: 4 })),
+      reg('eqo2', eqo2Res),
+      tieneFe(feo2) ? reg('feo2', bisagra(pts(vo2s, feo2, sub), { signo: +1, despues: '+', minSide: 4 })) : null
+    ].filter(Boolean).filter(e => e.vo2 >= 0.30 * hi);
+    out.vt1 = consenso(vt1Est);
+
+    // ── VT2 / RCP: por encima de VT1 (o del 40 % del rango) ──
+    // VE/VCO₂ tiene forma de U (baja, meseta isocápnica, sube): una sola bisagra sobre toda
+    // la curva cae en el nadir. Se ajusta desde el nadir de VE/VCO₂ (pico de FeCO₂) en
+    // adelante, donde la forma es meseta → ascenso (Wasserman: fin del tamponamiento isocápnico).
+    const piso = Math.max(lo + 0.40 * rango, out.vt1 ? out.vt1.vo2 : -Infinity);
+    const alto = B.map((_, i) => i).filter(i => B[i].vo2 >= piso);
+    const desdeExtremo = (ys, sgn) => { let j = -1, v = sgn > 0 ? Infinity : -Infinity;
+      for (const i of alto) if (fin(ys[i]) && (sgn > 0 ? ys[i] < v : ys[i] > v)) { v = ys[i]; j = i; }
+      return j < 0 ? [] : alto.filter(i => i >= j); };
+    const vt2Est = [
+      reg('eqco2', bisagra(pts(vo2s, eqco2, desdeExtremo(eqco2, +1)), { signo: +1, despues: '+', minSide: 3 })),
+      tieneFe(feco2) ? reg('feco2', bisagra(pts(vo2s, feco2, desdeExtremo(feco2, -1)), { signo: -1, despues: '-', minSide: 3 })) : null
+    ].filter(Boolean);
+    const rcpEst = [reg('ve_vco2', bisagra(pts(vco2s, B.map(b => b.ve), alto), { signo: +1, minSide: 3 }))].filter(Boolean);
+    out.vt2 = consenso(vt2Est);
+    out.rcp = consenso(rcpEst);
+
+    // Coherencia: VT1 < VT2/RCP (garantizada por el piso salvo empates); si se cruzan, se
+    // descarta VT1 (el tramo alto se apoya en más señal).
+    if (out.vt1 && Math.min(...[out.vt2?.vo2, out.rcp?.vo2].filter(fin), Infinity) <= out.vt1.vo2 * 1.03) out.vt1 = null;
+    out.pico = hi;
+    if (!out.vt1 && !out.vt2 && !out.rcp) out.motivo = 'sin quiebre estadísticamente significativo (F < 4) en ningún método';
+    return out;
+  }
+
+  /** Estimación por modelo: VT = VO₂máx · r. loaVo2max = LoA95 del VO₂máx de origen. */
+  function estimar(vo2max, loaVo2max) {
+    if (!fin(vo2max) || vo2max <= 0) return null;
+    const f = R => ({ vo2: vo2max * R.r, banda: Math.sqrt((R.r * (fin(loaVo2max) ? loaVo2max : 0)) ** 2 + (1.96 * R.sd * vo2max) ** 2), r: R.r });
+    return { vt1: f(RATIOS.vt1), vt2: f(RATIOS.vt2) };
+  }
+
+  /** Une detección y estimación. ref = { vo2max, loa, fuente } (VO₂máx de VO2Smart Predict). */
+  function resolver(rows, ref) {
+    const d = detectar(rows);
+    const e = ref ? estimar(ref.vo2max, ref.loa) : null;
+    const pick = (det, est, nombre) => {
+      if (det) return { nombre, valor: det.vo2, origen: 'medido', metodos: det.metodos, n: det.n, dispersion: det.dispersion };
+      if (est) return { nombre, valor: est.vo2, banda: est.banda, origen: 'estimado', ratio: est.r, fuente: ref.fuente };
+      return { nombre, valor: NaN, origen: 'ninguno' };
+    };
+    const res = { vt1: pick(d.vt1, e?.vt1, 'VT1'), vt2: pick(d.vt2, e?.vt2, 'VT2'), rcp: pick(d.rcp, e?.vt2, 'RCP'), deteccion: d };
+    // Mezcla medido/estimado: conservar VT1 < VT2 y VT1 < RCP; el estimado cede.
+    for (const k of ['vt2', 'rcp']) if (fin(res.vt1.valor) && fin(res[k].valor) && res.vt1.valor >= res[k].valor) {
+      if (res[k].origen === 'estimado') res[k] = { nombre: res[k].nombre, valor: NaN, origen: 'ninguno' };
+      else if (res.vt1.origen === 'estimado') res.vt1 = { nombre: 'VT1', valor: NaN, origen: 'ninguno' };
+    }
+    return res;
+  }
+
+  const NOMBRE_METODO = { vslope: 'V-slope', exco2: 'ExCO₂', eqo2: 'VE/VO₂', feo2: 'FeO₂', eqco2: 'VE/VCO₂', feco2: 'FeCO₂', ve_vco2: 'VE vs VCO₂' };
+  return { version: '1.0.0', detectar, estimar, resolver, preparar, bisagra, RATIOS, NOMBRE_METODO, BIN_S, MIN_BINS };
+});
+
+</script>
+<script id="vo2sp-live-lab-umbrales">
+/* [VO2SP-UMBRALES-2026-11-24] VT1/VT2/RCP en vo2lab: tarjetas live + informe, e IA en el informe.
+ * Motor: umbrales_vt.js (window.VO2SPUmbrales). VO₂máx de referencia: VO2SPIntegral.estado()
+ * (medido manda > D con gases > A por perfil), el mismo que pinta la tarjeta integral.
+ * Clase B: no toca firmware, mediciones ni motores A/B/C/D. Solo presenta.
+ * Expone: VO2SP_umbralesSesion(force), VO2SP_pintarUmbrales(U), VO2SP_rellenarInforme(ctx).
+ * REVERTIR: quitar los bloques script con id vo2sp-umbrales y vo2sp-live-lab-umbrales y
+ * restaurar en updateUI la llamada a computeVSlopeVT1()/computeNadirVT2(). */
+(function () {
+  'use strict';
+  if (typeof window === 'undefined' || !window.VO2SPUmbrales) return;
+  const U = window.VO2SPUmbrales;
+  const fin = v => typeof v === 'number' && isFinite(v);
+  const num = v => (v === null || v === undefined || v === '') ? NaN : Number(v);
+  const f = (v, d = 1) => fin(v) ? v.toFixed(d) : '--';
+  const el = id => document.getElementById(id);
+  const set = (id, t) => { const e = el(id); if (e) e.textContent = t; };
+  const FUENTE = { medido: 'VO₂ pico medido', gases_val: 'D (gases)', gases_ref: 'D (gases, referencia)', retenida: 'D (retenida)',
+    acumulando: 'A (perfil)', perfil: 'A (perfil)' };
+  const ROTULO = { sin_perfil: 'SIN PERFIL', perfil: 'PERFIL', acumulando: 'ACUMULANDO GASES', gases_ref: 'CON GASES · REFERENCIA',
+    gases_val: 'CON GASES · VALIDADA', retenida: 'RETENIDA', medido: 'MEDIDO MANDA' };
+
+  function filas() {
+    const S = (typeof G !== 'undefined' && Array.isArray(G.session)) ? G.session : [];
+    return S.map(e => ({
+      t_s: num(e._activeMs ?? e._tms) / 1000, phase: e.phase,
+      vo2: num(e.vo2), vco2: num(e.vco2), ve: num(e.ve),
+      feo2: e.o2 == null ? NaN : num(e.o2), feco2: e.co2 == null ? NaN : num(e.co2) * 100,   // co2 viaja como fracción
+      ok: e.metNew !== false && e.gasValid !== false && e.vo2_floor !== 'IMPOSIBLE'
+    }));
+  }
+  function integral() {
+    const I = window.VO2SPIntegral, r = window.VO2SP_ULTIMO;
+    if (!I || !r) return null;
+    const rows = (typeof G !== 'undefined' && Array.isArray(G.session)) ? G.session : [];
+    return I.estado(r, window.VO2SP_VISTA, { running: G.testState === 'running', finished: G.testState === 'idle' && rows.length > 0, rows });
+  }
+  function referencia(e) {
+    if (!e || !fin(e.valor)) return null;
+    // D retenida = estimación de una sesión ANTERIOR del mismo perfil: decirlo explícitamente.
+    const fuente = e.estado === 'retenida'
+      ? 'D retenida · ' + ((window.VO2SP_VISTA && window.VO2SP_VISTA.D && window.VO2SP_VISTA.D.label) || 'sesión anterior')
+      : (FUENTE[e.estado] || 'VO2Smart Predict');
+    return { vo2max: e.valor, loa: fin(e.banda) ? e.banda : 0, fuente, estado: e.estado };
+  }
+
+  // ── Gráficos de umbrales (SVG, para el informe) ──
+  const COL = { vt1: '#1d4ed8', vt2: '#c62828', rcp: '#6d28d9' };
+  function svgScatter(id, series, ejes, marcas) {
+    const s = el(id); if (!s) return;
+    const W = 300, H = 220, L = 38, R = 8, T = 22, B = 30;
+    const all = series.flatMap(q => q.pts).filter(p => fin(p.x) && fin(p.y));
+    if (all.length < 2) { s.innerHTML = `<text x="150" y="110" text-anchor="middle" font-size="11" fill="#64748b">Sin datos suficientes</text>`; return; }
+    let x0 = Math.min(...all.map(p => p.x)), x1 = Math.max(...all.map(p => p.x)), y0 = Math.min(...all.map(p => p.y)), y1 = Math.max(...all.map(p => p.y));
+    const px = (x1 - x0) * 0.05 || 1, py = (y1 - y0) * 0.08 || 1; x0 -= px; x1 += px; y0 -= py; y1 += py;
+    const X = v => L + (v - x0) / (x1 - x0) * (W - L - R), Y = v => H - B - (v - y0) / (y1 - y0) * (H - T - B);
+    let h = `<line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="#94a3b8"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" stroke="#94a3b8"/>`;
+    h += `<text x="${L}" y="${H - B + 12}" font-size="9" fill="#475569">${f(x0)}</text><text x="${W - R}" y="${H - B + 12}" font-size="9" fill="#475569" text-anchor="end">${f(x1)}</text>`;
+    h += `<text x="${L - 3}" y="${H - B}" font-size="9" fill="#475569" text-anchor="end">${f(y0)}</text><text x="${L - 3}" y="${T + 8}" font-size="9" fill="#475569" text-anchor="end">${f(y1)}</text>`;
+    h += `<text x="${(L + W - R) / 2}" y="${H - 4}" font-size="10" fill="#334155" text-anchor="middle">${ejes.x}</text>`;
+    h += `<text x="10" y="${(T + H - B) / 2}" font-size="10" fill="#334155" text-anchor="middle" transform="rotate(-90 10 ${(T + H - B) / 2})">${ejes.y}</text>`;
+    for (const q of series) for (const p of q.pts) if (fin(p.x) && fin(p.y)) h += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="2.6" fill="${q.color}" opacity="0.8"/>`;
+    let lx = L + 4;
+    for (const q of series) { h += `<circle cx="${lx}" cy="10" r="3" fill="${q.color}"/><text x="${lx + 6}" y="13" font-size="9" fill="#334155">${q.label}</text>`; lx += 12 + q.label.length * 5; }
+    marcas.forEach((m, i) => {
+      if (!fin(m.x)) return;
+      const dentro = m.x >= x0 && m.x <= x1, xx = dentro ? X(m.x) : (m.x > x1 ? W - R : L), dash = m.estimado ? 'stroke-dasharray="5 3"' : '';
+      h += `<line x1="${xx.toFixed(1)}" y1="${T}" x2="${xx.toFixed(1)}" y2="${H - B}" stroke="${m.color}" stroke-width="1.6" ${dash} opacity="${dentro ? 1 : 0.5}"/>`;
+      h += `<text x="${(xx + (xx > W - 70 ? -3 : 3)).toFixed(1)}" y="${T + 10 + i * 11}" font-size="9" fill="${m.color}" text-anchor="${xx > W - 70 ? 'end' : 'start'}">${m.label}${dentro ? '' : (m.x > x1 ? ' →' : ' ←')}</text>`;
+    });
+    s.innerHTML = h;
+  }
+  function graficosUmbrales() {
+    const R = umbralesSesion(true), rows = filas();
+    let B = U.preparar(rows), nota = 'Ventanas de 15 s con carga, hasta el pico.';
+    if (B.length < 3) { B = U.preparar(rows.map(r => Object.assign({}, r, { phase: 'exercise' }))); nota = 'Sin fase con carga: se grafican todas las ventanas válidas de 15 s (solo descriptivo).'; }
+    const p = (typeof getPatient === 'function' ? getPatient() : {}) || {}, w = num(p.weight);
+    const kg = fin(w) && w > 0, toL = v => kg ? v * w / 1000 : v;          // equivalentes con VO₂ en L/min
+    const mk = (k, eje) => { const x = R[k]; if (!x || !fin(x.valor)) return null;
+      const est = x.origen === 'estimado'; let xv = x.valor;
+      if (eje === 'vco2') { // RCP: VCO₂ de la ventana con VO₂ más cercano (o RER 1 si está fuera de rango)
+        const near = B.reduce((b, q) => !b || Math.abs(q.vo2 - xv) < Math.abs(b.vo2 - xv) ? q : b, null);
+        xv = near && Math.abs(near.vo2 - xv) < 0.1 * xv ? near.vco2 : xv; }
+      return { x: xv, color: COL[k], estimado: est, label: `${k.toUpperCase()}${est ? ' ≈ IA' : ''} ${f(x.valor)}` }; };
+    svgScatter('rep-svg-vslope', [{ label: 'VCO₂ vs VO₂', color: '#ef4444', pts: B.map(b => ({ x: b.vo2, y: b.vco2 })) }],
+      { x: 'VO₂ ml/kg/min', y: 'VCO₂ ml/kg/min' }, [mk('vt1')].filter(Boolean));
+    svgScatter('rep-svg-eq', [{ label: 'VE/VO₂', color: '#f59e0b', pts: B.map(b => ({ x: b.vo2, y: b.ve / toL(b.vo2) })) },
+      { label: 'VE/VCO₂', color: '#8b5cf6', pts: B.map(b => ({ x: b.vo2, y: b.ve / toL(b.vco2) })) }],
+      { x: 'VO₂ ml/kg/min', y: kg ? 'Equivalente ventilatorio' : 'VE/VO₂ (sin peso: forma)' }, [mk('vt1'), mk('vt2')].filter(Boolean));
+    svgScatter('rep-svg-vevco2', [{ label: 'VE vs VCO₂', color: '#0ea5e9', pts: B.map(b => ({ x: b.vco2, y: b.ve })) }],
+      { x: 'VCO₂ ml/kg/min', y: 'VE L/min' }, [mk('rcp', 'vco2')].filter(Boolean));
+    const fuera = ['vt1', 'vt2', 'rcp'].some(k => R[k].origen === 'estimado');
+    set('rep-thr-charts-note', `${nota} ${B.length} ventanas. Línea continua = medido; punteada = IA (estimación)` +
+      (fuera ? '; una flecha indica que el umbral estimado queda fuera del rango registrado (esfuerzo insuficiente).' : '.'));
+    return B.length;
+  }
+
+  let cache = null, cacheKey = '', cacheTs = 0;
+  function umbralesSesion(force) {
+    const S = (typeof G !== 'undefined' && G.session) || [];
+    const e = integral(), ref = referencia(e);
+    const key = JSON.stringify([S.length, S.at(-1)?._tms, G.testState, ref && +ref.vo2max.toFixed(1), ref && ref.estado]);
+    const now = Date.now();
+    if (!force && cache && (key === cacheKey || now - cacheTs < 3000)) return cache;
+    cacheKey = key; cacheTs = now;
+    cache = U.resolver(filas(), ref);
+    cache.ref = ref; cache.integral = e;
+    window.VO2SP_UMBRALES = cache;
+    return cache;
+  }
+
+  const nombres = ms => (ms || []).map(m => U.NOMBRE_METODO[m] || m).join(' + ');
+  function subtexto(x, d, ref) {
+    if (x.origen === 'medido') return `medido · ${nombres(x.metodos)}` + (x.n > 1 && fin(x.dispersion) ? ` · dispersión ${f(x.dispersion)}` : '');
+    if (x.origen === 'estimado') return `IA (estimación) ± ${f(x.banda)} · ${x.fuente} × ${f(x.ratio, 3)}`;
+    return ref ? (d.motivo || 'sin quiebre detectable') : 'complete sexo, edad, talla y peso en Usuario';
+  }
+  function pintar(R) {
+    for (const k of ['vt1', 'vt2', 'rcp']) {
+      const v = el(k + '-val'); if (!v) continue;
+      const x = R[k];
+      v.textContent = x.origen === 'medido' ? f(x.valor) : x.origen === 'estimado' ? '≈ ' + f(x.valor) : (G.testState === 'running' ? 'Detectando…' : '--');
+      v.style.fontStyle = x.origen === 'estimado' ? 'italic' : '';
+      let s = el(k + '-src');
+      if (!s && v.parentElement) { s = document.createElement('div'); s.id = k + '-src'; s.className = 'mm-unit'; s.style.cssText = 'font-size:0.62rem;margin-top:2px;'; v.parentElement.appendChild(s); }
+      if (s) { s.textContent = subtexto(x, R.deteccion, R.ref); s.style.color = x.origen === 'estimado' ? '#6d28d9' : ''; }
+    }
+  }
+
+  function rellenarInforme(ctx) {
+    if (window.VO2SP && window.VO2SP.actualizar) window.VO2SP.actualizar();   // captura coherente A/B/C/D
+    const R = umbralesSesion(true), d = R.deteccion, e = R.integral;
+    const refMax = R.ref && fin(R.ref.vo2max) ? R.ref.vo2max : num(ctx && ctx.vo2Peak);
+    const txt = x => x.origen === 'medido' ? `${f(x.valor)} ml/kg/min · medido (${nombres(x.metodos)})`
+      : x.origen === 'estimado' ? `≈ ${f(x.valor)} ± ${f(x.banda)} ml/kg/min · IA (estimación)`
+      : `-- (${R.ref ? (d.motivo || 'sin quiebre detectable') : 'sin perfil completo'})`;
+    set('rep-vt1', txt(R.vt1)); set('rep-vt2', txt(R.vt2)); set('rep-rcp', txt(R.rcp));
+    const pct = x => fin(x.valor) && fin(refMax) && refMax > 0 ? `${(x.valor / refMax * 100).toFixed(0)}% (ref. ${f(refMax)}${R.ref ? ' · ' + R.ref.fuente : ' · pico medido'})` : '--%';
+    set('rep-vt1-pct', pct(R.vt1)); set('rep-vt2-pct', pct(R.vt2));
+    const orig = ['vt1', 'vt2', 'rcp'].map(k => R[k].origen);
+    set('rep-thr-origin', orig.every(o => o === 'medido') ? 'Medido (consenso de métodos)'
+      : orig.every(o => o !== 'medido') ? (orig.some(o => o === 'estimado') ? 'IA (estimación) — ' + (d.motivo || 'sin quiebre detectable') : 'Sin datos suficientes')
+      : 'Mixto: medido donde hubo quiebre, IA (estimación) en el resto');
+    const M = d.metodos || {}, lista = ks => ks.filter(k => M[k]).map(k => `${U.NOMBRE_METODO[k]} ${f(M[k].vo2)} (F ${M[k].F})`).join(' · ') || 'sin quiebre';
+    set('rep-thr-methods', d.bins >= U.MIN_BINS
+      ? `Detección sobre ${d.bins} ventanas de 15 s con carga hasta el pico. VT1: ${lista(['vslope', 'exco2', 'eqo2', 'feo2'])} | VT2: ${lista(['eqco2', 'feco2'])} | RCP: ${lista(['ve_vco2'])}.`
+      : `Detección no aplicable: ${d.motivo}.`);
+
+    // ── IA predictiva ──
+    const r = window.VO2SP_ULTIMO || {};
+    set('rep-ia-int', e && fin(e.valor) ? `${f(e.valor)}${fin(e.banda) ? ' ± ' + f(e.banda) : ''} ml/kg/min · ${ROTULO[e.estado] || e.estado} · ${e.fuente}` : (e ? e.nota : '--'));
+    set('rep-ia-a', r.A ? `${f(r.A.vo2max_mLkgmin)} ± ${f(r.A.loa95)} ml/kg/min (${f(r.A.vo2max_Lmin, 2)} L/min)` : 'complete sexo, edad, talla y peso');
+    set('rep-ia-b', r.B && fin(r.B.vo2max_mLkgmin) ? `${f(r.B.vo2max_mLkgmin)} ± ${f(r.B.loa95)} ml/kg/min${r.B.provisional ? ' · provisional' : ''}${r.B.exploratory ? ' · exploratoria' : ''}` : (r.bReason || '--'));
+    set('rep-ia-d', r.D && r.D.listo && fin(r.D.vo2max) ? `${f(r.D.vo2max)} ± ${f(r.D.loa95)} ml/kg/min · ${r.D.modelo === 'D_completo' ? 'gases + FC + carga' : 'solo gases'}${r.D.exploratory ? ' · exploratoria' : ''}` : (r.dReason || '--'));
+    const c = (r.serie || []).filter(s => fin(s.esperado)).at(-1);
+    set('rep-ia-c', c ? `esperado ${f(c.esperado)} · medido ${f(c.medido)} ml/kg/min` : (r.cReason || '--'));
+    set('rep-ia-ctl', fin(r.vo2max_medido) ? `${f(r.vo2max_medido)} ml/kg/min${r.control ? ` · ${r.control.modelo} ${f(r.control.estimado)} → ${r.control.dentro ? 'coherente' : 'fuera de LoA'}` : ''}` : 'sin 30 s continuos de VO₂ válido');
+    const av = [...new Set([...(r.A?.avisos || []), ...(r.B?.avisos || [])])];
+    set('rep-ia-state', [e && e.aviso ? '⚠ ' + e.aviso : '', av.length ? '⚠ ' + av.join(' · ') : '', r.exploratory ? 'Modo exploratorio: sin ejercicio incremental registrado.' : '',
+      e && e.nota ? e.nota : ''].filter(Boolean).join(' · '));
+    return R;
+  }
+
+  window.VO2SP_umbralesSesion = umbralesSesion;
+  window.VO2SP_pintarUmbrales = pintar;
+  window.VO2SP_rellenarInforme = rellenarInforme;
+  window.VO2SP_graficosUmbrales = graficosUmbrales;
+  // Pintar en la carga (perfil sin sesión → ya hay estimación desde A).
+  window.addEventListener('load', () => { try { pintar(umbralesSesion(true)); } catch (err) { console.warn('[VO2SP-UMBRALES]', err); } });
+  // Fuera de prueba updateUI no corre: refrescar al cambiar perfil/estado (cacheado).
+  setInterval(() => { try { if (G.testState !== 'running') pintar(umbralesSesion(false)); } catch (_) {} }, 2000);
+})();
 
 </script>
 <!-- deploy-layer: aplicada por tools/deploy/build_app.py -->
